@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "InterviewOS"
+version = "1.0.0"
+id = "artifacts/interviewos"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22643
+
+[services.development]
+run = "pnpm --filter @workspace/interviewos run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/interviewos", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/interviewos/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22643"
+BASE_PATH = "/"
