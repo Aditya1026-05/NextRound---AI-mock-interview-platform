@@ -12,23 +12,23 @@ export default function Settings() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account settings and preferences.</p>
+        <h1 className="text-4xl font-bold tracking-tighter text-foreground">Settings</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Manage your account settings and preferences.</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar Navigation */}
         <nav className="w-full md:w-64 space-y-1">
-          <Button variant="secondary" className="w-full justify-start">
+          <Button variant="secondary" className="w-full justify-start rounded-full">
             <User className="mr-2 h-4 w-4" /> Account
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
             <Paintbrush className="mr-2 h-4 w-4" /> Appearance
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
             <Bell className="mr-2 h-4 w-4" /> Notifications
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
             <Shield className="mr-2 h-4 w-4" /> Security
           </Button>
         </nav>

@@ -59,16 +59,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <div className="h-16 flex items-center px-4 border-b shrink-0 overflow-hidden">
               <div className="flex items-center gap-3 w-full">
-                <div className="bg-primary text-primary-foreground w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0">
+                <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm">
                   IO
                 </div>
                 <AnimatePresence>
                   {isSidebarOpen && (
                     <motion.span 
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="font-bold text-lg tracking-tight whitespace-nowrap"
+                      className="font-bold text-lg tracking-tight whitespace-nowrap flex items-center gap-1.5"
                     >
                       InterviewOS
+                      <div className="flex gap-[2px] ml-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-1))]"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-2))]"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-3))]"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-4))]"></div>
+                      </div>
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -83,9 +89,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link key={item.href} href={item.href}>
                     <div
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
+                        "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
                         isActive
-                          ? "bg-primary/10 text-primary"
+                          ? item.colorClass
                           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                       )}
                     >
@@ -172,8 +178,8 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-2">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full ml-2 overflow-hidden border border-border">
+          <Avatar className="h-full w-full">
             <AvatarImage src="https://github.com/shadcn.png" alt="@user" />
             <AvatarFallback>EN</AvatarFallback>
           </Avatar>

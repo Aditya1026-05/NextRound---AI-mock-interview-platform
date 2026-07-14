@@ -9,8 +9,8 @@ export default function NotFound() {
         <AlertCircle className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
       </div>
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">404</h1>
-        <p className="text-lg text-muted-foreground">The page you're looking for doesn't exist.</p>
+        <h1 className="text-5xl font-bold tracking-tighter">404</h1>
+        <p className="text-xl text-muted-foreground">The page you're looking for doesn't exist.</p>
       </div>
       <Button asChild>
         <Link href="/dashboard">Return to Dashboard</Link>

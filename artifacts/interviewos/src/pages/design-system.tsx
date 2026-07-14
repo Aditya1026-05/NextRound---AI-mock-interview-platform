@@ -12,8 +12,8 @@ export default function DesignSystem() {
   return (
     <div className="space-y-12 max-w-5xl mx-auto pb-20">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">Design System</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Living style guide for InterviewOS UI primitives.</p>
+        <h1 className="text-5xl font-bold tracking-tighter text-foreground">Design System</h1>
+        <p className="text-muted-foreground mt-2 text-xl">Living style guide for InterviewOS UI primitives.</p>
       </div>
 
       {/* Colors */}
@@ -24,10 +24,10 @@ export default function DesignSystem() {
           <ColorSwatch name="Secondary" variable="bg-secondary" />
           <ColorSwatch name="Card" variable="bg-card" />
           <ColorSwatch name="Border" variable="bg-border" />
-          <ColorSwatch name="Primary" variable="bg-primary" textClass="text-primary-foreground" />
-          <ColorSwatch name="Destructive" variable="bg-destructive" textClass="text-destructive-foreground" />
-          <ColorSwatch name="Success" variable="bg-[#34A853]" textClass="text-white" />
-          <ColorSwatch name="Warning" variable="bg-[#FBBC04]" textClass="text-black" />
+          <ColorSwatch name="Primary (Blue)" variable="bg-primary" textClass="text-primary-foreground" />
+          <ColorSwatch name="Destructive (Red)" variable="bg-destructive" textClass="text-destructive-foreground" />
+          <ColorSwatch name="Success (Green)" variable="bg-[hsl(var(--success))]" textClass="text-primary-foreground" />
+          <ColorSwatch name="Warning (Yellow)" variable="bg-[hsl(var(--warning))]" textClass="text-foreground" />
         </div>
       </section>
 
@@ -37,28 +37,28 @@ export default function DesignSystem() {
         <Card>
           <CardContent className="space-y-6 pt-6">
             <div>
-              <h1 className="text-4xl font-bold">Heading 1</h1>
+              <h1 className="text-4xl font-bold tracking-tighter">Heading 1</h1>
               <p className="text-sm text-muted-foreground mt-1">Inter Bold, 36px (text-4xl)</p>
             </div>
             <div>
-              <h2 className="text-3xl font-semibold">Heading 2</h2>
+              <h2 className="text-3xl font-semibold tracking-tight">Heading 2</h2>
               <p className="text-sm text-muted-foreground mt-1">Inter Semibold, 30px (text-3xl)</p>
             </div>
             <div>
-              <h3 className="text-2xl font-semibold">Heading 3</h3>
+              <h3 className="text-2xl font-semibold tracking-tight">Heading 3</h3>
               <p className="text-sm text-muted-foreground mt-1">Inter Semibold, 24px (text-2xl)</p>
             </div>
             <div>
-              <p className="text-base text-foreground">
+              <p className="text-lg text-foreground">
                 Base text. The quick brown fox jumps over the lazy dog. This is used for primary body copy across the application.
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Inter Regular, 16px (text-base)</p>
+              <p className="text-sm text-muted-foreground mt-1">Inter Regular, 18px (text-lg)</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Small text. Used for secondary information, descriptions, and metadata.
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Inter Regular, 14px (text-sm)</p>
+              <p className="text-sm text-muted-foreground mt-1">Inter Regular, 16px (text-base)</p>
             </div>
           </CardContent>
         </Card>
@@ -104,6 +104,7 @@ export default function DesignSystem() {
             <Badge variant="destructive">Destructive</Badge>
             <Badge variant="success">Success</Badge>
             <Badge variant="warning">Warning</Badge>
+            <Badge variant="info">Info</Badge>
           </CardContent>
         </Card>
       </section>

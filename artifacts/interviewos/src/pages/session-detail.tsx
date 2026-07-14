@@ -37,10 +37,10 @@ export default function SessionDetail() {
         </Button>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{session.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tighter">{session.title}</h1>
             <Badge variant="secondary">{session.company}</Badge>
           </div>
-          <p className="text-muted-foreground text-sm flex items-center gap-2 mt-1">
+          <p className="text-muted-foreground text-base flex items-center gap-2 mt-2">
             <Clock className="w-4 h-4" /> {session.date} • {session.duration}
           </p>
         </div>
@@ -96,18 +96,18 @@ export default function SessionDetail() {
         <div className="md:col-span-2">
           <Card className="h-full">
             <Tabs defaultValue="transcript" className="w-full">
-              <CardHeader className="border-b pb-0 pt-4 px-6 flex flex-row items-center justify-between bg-muted/20">
-                <TabsList className="bg-transparent h-12 p-0 space-x-6">
+              <CardHeader className="border-b pb-4 pt-4 px-6 flex flex-row items-center justify-between bg-muted/20">
+                <TabsList className="bg-transparent h-10 p-0 space-x-2">
                   <TabsTrigger 
                     value="transcript" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3"
+                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-transparent rounded-full px-4"
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Transcript
                   </TabsTrigger>
                   <TabsTrigger 
                     value="feedback" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3"
+                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-transparent rounded-full px-4"
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     AI Feedback

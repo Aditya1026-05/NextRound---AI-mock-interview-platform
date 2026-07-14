@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
 
 const MOCK_STATS = [
   { label: "Questions Solved", value: "142", icon: CheckCircle2, trend: "+12 this week" },
@@ -38,8 +38,8 @@ export default function Dashboard() {
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, Alex</h1>
-          <p className="text-muted-foreground mt-1">Here is a summary of your interview preparation.</p>
+          <h1 className="text-4xl font-bold tracking-tighter text-foreground">Welcome back, Alex</h1>
+          <p className="text-muted-foreground mt-2 text-lg">Here is a summary of your interview preparation.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline">Resume Last Session</Button>
@@ -102,7 +102,7 @@ export default function Dashboard() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {session.company !== "General" && (
-                            <span className="w-4 h-4 bg-secondary rounded-sm flex items-center justify-center text-[10px] font-bold">
+                            <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold">
                               {session.company[0]}
                             </span>
                           )}
@@ -112,7 +112,7 @@ export default function Dashboard() {
                       <TableCell className="text-muted-foreground">{session.date}</TableCell>
                       <TableCell className="text-right">
                         {session.status === "upcoming" ? (
-                          <Badge variant="outline">Upcoming</Badge>
+                          <Badge variant="info">Upcoming</Badge>
                         ) : (
                           <Badge variant={session.score && session.score > 80 ? "success" : "warning"}>
                             {session.score}/100
@@ -160,10 +160,14 @@ export default function Dashboard() {
                     />
                     <Bar 
                       dataKey="score" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]} 
+                      radius={[8, 8, 0, 0]} 
                       maxBarSize={40}
-                    />
+                    >
+                      {MOCK_CHART_DATA.map((entry, index) => {
+                        const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
+                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                      })}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Search, Filter, Play } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -38,11 +39,11 @@ export default function Practice() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Practice Library</h1>
-        <p className="text-muted-foreground mt-1">Explore questions across all disciplines to prepare effectively.</p>
+        <h1 className="text-4xl font-bold tracking-tighter text-foreground">Practice Library</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Explore questions across all disciplines to prepare effectively.</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-xl border">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-2xl border">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -78,7 +79,7 @@ export default function Practice() {
             <Card key={i} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex items-center p-4 gap-4">
-                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <Skeleton className="h-12 w-12 rounded-2xl" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-5 w-1/3" />
                     <Skeleton className="h-4 w-1/4" />
@@ -104,7 +105,7 @@ export default function Practice() {
                   <div className="flex items-center gap-3">
                     <h3 className="font-semibold text-lg">{q.title}</h3>
                     {q.company !== "General" && (
-                      <span className="text-xs font-medium px-2 py-1 bg-secondary rounded-md text-secondary-foreground">
+                      <span className="text-xs font-medium px-2.5 py-1 bg-secondary rounded-full text-secondary-foreground">
                         {q.company}
                       </span>
                     )}
@@ -112,12 +113,22 @@ export default function Practice() {
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">{q.category}</span>
                     <span>•</span>
-                    <span className={
-                      q.difficulty === "Hard" ? "text-destructive" :
-                      q.difficulty === "Medium" ? "text-warning" : "text-success"
-                    }>{q.difficulty}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className={cn(
+                        "w-2 h-2 rounded-full",
+                        q.difficulty === "Hard" ? "bg-destructive" :
+                        q.difficulty === "Medium" ? "bg-warning" : "bg-success"
+                      )} />
+                      <span className={
+                        q.difficulty === "Hard" ? "text-destructive" :
+                        q.difficulty === "Medium" ? "text-warning" : "text-success"
+                      }>{q.difficulty}</span>
+                    </span>
                     <span>•</span>
-                    <span>{q.status}</span>
+                    <span className="flex items-center gap-1.5">
+                      {q.status === "Completed" && <span className="w-2 h-2 rounded-full bg-primary" />}
+                      <span>{q.status}</span>
+                    </span>
                   </div>
                 </div>
                 
