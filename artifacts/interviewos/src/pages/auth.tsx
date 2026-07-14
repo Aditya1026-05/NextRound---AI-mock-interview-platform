@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useLocation, Link } from "wouter"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowRight, Check } from "lucide-react"
+import { ArrowRight, Check, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,7 +36,13 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground relative z-0 overflow-hidden">
+      {/* Subtle Background Gradient */}
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#4285F4]/[0.08] dark:bg-[#4285F4]/[0.15] blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-[#FBBC05]/[0.04] dark:bg-[#FBBC05]/[0.06] blur-[100px]" />
+      </div>
+
       {/* Top Bar */}
       <header className="h-20 px-6 md:px-12 flex items-center justify-between shrink-0">
         <Link href="/" className="flex items-center gap-3 cursor-pointer">
@@ -59,14 +65,31 @@ export default function Auth() {
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center max-w-[1200px] w-full mx-auto p-6 md:p-12 gap-12 lg:gap-24">
         
         {/* Left Side: Hero Copy */}
-        <div className="flex-1 max-w-xl text-center lg:text-left space-y-6">
-          <motion.h1 
+        <div className="flex-1 max-w-xl text-center lg:text-left space-y-6 flex flex-col items-center lg:items-start">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-5xl md:text-6xl font-bold tracking-tighter leading-[1.1]"
+            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-background/50 border shadow-sm text-sm font-medium mb-2 text-foreground backdrop-blur-md"
           >
-            Practice smarter with <span className="text-[#4285F4]">AI-powered mock interviews</span>
+            <div className="w-6 h-6 rounded-full bg-[#4285F4]/10 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-[#4285F4]" />
+            </div>
+            <span>Meet your new AI interviewer</span>
+          </motion.div>
+
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex flex-col gap-2 md:gap-3"
+          >
+            <span className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+              Practice smarter with
+            </span>
+            <span className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.05] text-[#4285F4]">
+              AI-powered<br />mock interviews
+            </span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -216,7 +239,7 @@ export default function Auth() {
                   )}
                 </AnimatePresence>
 
-                <Button type="submit" className="w-full rounded-full h-11 mt-6 text-base font-medium shadow-md bg-[#4285F4] text-white hover:bg-[#4285F4]/90">
+                <Button type="submit" className="w-full rounded-full h-11 mt-6 text-base font-medium shadow-md bg-gradient-to-r from-[#4285F4] to-[#2b68ce] text-white hover:opacity-90 border-0 transition-opacity">
                   {isSignUp ? "Create account" : "Log in"}
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>

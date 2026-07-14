@@ -35,18 +35,23 @@ const MOCK_CHART_DATA = [
 export default function Dashboard() {
   return (
     <div className="space-y-8">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tighter text-foreground">Welcome back, Alex</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Here is a summary of your interview preparation.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline">Resume Last Session</Button>
-          <Button className="gap-2">
-            <PlayCircle className="w-4 h-4" />
-            New Mock Interview
-          </Button>
+      {/* Header section with soft gradient */}
+      <div className="relative -mx-4 md:-mx-8 px-4 md:px-8 pb-8 -mt-4 border-b bg-background/50">
+        <div className="absolute top-0 left-[10%] w-[500px] h-[300px] rounded-full bg-[#4285F4]/10 dark:bg-[#4285F4]/20 blur-[100px] pointer-events-none -z-10" />
+        <div className="absolute top-[20%] right-[20%] w-[300px] h-[200px] rounded-full bg-[#FBBC05]/5 dark:bg-[#FBBC05]/10 blur-[80px] pointer-events-none -z-10" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 md:pt-10">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-foreground">Welcome back, Alex</h1>
+            <p className="text-muted-foreground mt-2 text-lg">Here is a summary of your interview preparation.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="rounded-full bg-background/50 backdrop-blur-sm">Resume Last Session</Button>
+            <Button className="gap-2 rounded-full bg-gradient-to-r from-[#4285F4] to-[#2b68ce] text-white shadow-md hover:opacity-90 border-0 transition-opacity">
+              <PlayCircle className="w-4 h-4" />
+              New Mock Interview
+            </Button>
+          </div>
         </div>
       </div>
 
