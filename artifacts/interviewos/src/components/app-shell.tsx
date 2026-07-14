@@ -66,15 +66,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {isSidebarOpen && (
                     <motion.span 
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="font-bold text-lg tracking-tight whitespace-nowrap flex items-center gap-1.5"
+                      className="font-bold text-lg tracking-tight whitespace-nowrap"
                     >
                       InterviewOS
-                      <div className="flex gap-[2px] ml-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-1))]"></div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-2))]"></div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-3))]"></div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--chart-4))]"></div>
-                      </div>
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -91,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       className={cn(
                         "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
                         isActive
-                          ? item.colorClass
+                          ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                       )}
                     >
