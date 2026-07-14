@@ -36,8 +36,20 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground relative z-0 overflow-hidden">
-      {/* Subtle Background Gradient */}
+    <div
+      className="min-h-[100dvh] flex flex-col text-foreground relative z-0 overflow-hidden bg-background"
+      style={{
+        backgroundImage:
+          "radial-gradient(120% 90% at 15% 0%, rgba(66,133,244,0.10), transparent 60%), radial-gradient(90% 70% at 100% 15%, rgba(251,188,5,0.08), transparent 55%), radial-gradient(80% 60% at 85% 100%, rgba(234,67,53,0.05), transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(52,168,83,0.05), transparent 55%)",
+      }}
+    >
+      {/* Subtle Background Gradient (dark mode overrides + soft blur accents) */}
+      <div className="absolute inset-0 pointer-events-none -z-10 hidden dark:block"
+        style={{
+          backgroundImage:
+            "radial-gradient(120% 90% at 15% 0%, rgba(66,133,244,0.16), transparent 60%), radial-gradient(90% 70% at 100% 15%, rgba(251,188,5,0.07), transparent 55%), radial-gradient(80% 60% at 85% 100%, rgba(234,67,53,0.06), transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(52,168,83,0.06), transparent 55%)",
+        }}
+      />
       <div className="absolute inset-0 pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#4285F4]/[0.08] dark:bg-[#4285F4]/[0.15] blur-[120px]" />
         <div className="absolute bottom-[10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-[#FBBC05]/[0.04] dark:bg-[#FBBC05]/[0.06] blur-[100px]" />
