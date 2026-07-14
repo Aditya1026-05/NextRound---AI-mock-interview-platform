@@ -12,20 +12,23 @@ import SessionDetail from '@/pages/session-detail';
 import Settings from '@/pages/settings';
 import DesignSystem from '@/pages/design-system';
 import NotFound from '@/pages/not-found';
+import Auth from '@/pages/auth';
 
 const queryClient = new QueryClient();
 
-function Router() {
+function ProtectedRouter() {
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/practice" component={Practice} />
-      <Route path="/sessions/:id" component={SessionDetail} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/design-system" component={DesignSystem} />
-      <Route component={NotFound} />
-    </Switch>
+    <AppShell>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/practice" component={Practice} />
+        <Route path="/sessions/:id" component={SessionDetail} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/design-system" component={DesignSystem} />
+        <Route component={NotFound} />
+      </Switch>
+    </AppShell>
   );
 }
 
@@ -35,9 +38,11 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="interviewos-theme">
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <AppShell>
-              <Router />
-            </AppShell>
+            <Switch>
+              <Route path="/login" component={Auth} />
+              <Route path="/signup" component={Auth} />
+              <Route component={ProtectedRouter} />
+            </Switch>
           </WouterRouter>
           <Toaster />
         </TooltipProvider>
