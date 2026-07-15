@@ -1,0 +1,2 @@
+"""Resume schemas."""
+pass
