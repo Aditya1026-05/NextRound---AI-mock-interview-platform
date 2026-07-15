@@ -57,21 +57,21 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 select-none">
+      <div className="space-y-8 select-none relative">
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground select-text">
               Welcome back, {profile?.name || 'Developer'}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1 select-text">
               Analyze your performance, target weaknesses, and master your technical interviews.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
-              className="rounded-md text-xs gap-1.5 h-9"
+              className="rounded-full text-xs gap-1.5 h-9 px-4 border-border"
               onClick={() => setLocation('/interviews/history')}
             >
               <History className="h-4 w-4" />
@@ -79,7 +79,7 @@ export default function Dashboard() {
             </Button>
             <Button 
               onClick={() => setLocation('/interviews/new')}
-              className="rounded-md text-xs gap-1.5 h-9 bg-foreground text-background hover:bg-foreground/90 border-0"
+              className="rounded-full text-xs gap-1.5 h-9 px-5 bg-[#4285F4] hover:bg-[#3b77db] text-white border-0 shadow-sm transition-colors"
             >
               <Plus className="h-4 w-4" />
               New Mock Interview
@@ -87,7 +87,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Google Colors theme mapping */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             label="Questions Solved"
@@ -95,6 +95,7 @@ export default function Dashboard() {
             icon={CheckCircle2}
             trend="+12 this week"
             trendType="positive"
+            colorTheme="green"
           />
           <StatCard
             label="Mock Interviews"
@@ -102,6 +103,7 @@ export default function Dashboard() {
             icon={FileQuestion}
             trend="+3 this month"
             trendType="positive"
+            colorTheme="blue"
           />
           <StatCard
             label="Success Rate"
@@ -109,6 +111,7 @@ export default function Dashboard() {
             icon={TrendingUp}
             trend="Top 15% overall"
             trendType="positive"
+            colorTheme="yellow"
           />
           <StatCard
             label="Practice Time"
@@ -116,6 +119,7 @@ export default function Dashboard() {
             icon={Clock}
             trend="4h this week"
             trendType="positive"
+            colorTheme="red"
           />
         </div>
 
@@ -126,12 +130,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-foreground">Recent Sessions</h2>
-                <p className="text-muted-foreground text-xs">Your latest mock interview evaluations.</p>
+                <p className="text-muted-foreground text-xs font-medium">Your latest mock interview evaluations.</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+                className="text-xs font-semibold text-muted-foreground hover:text-foreground rounded-full"
                 onClick={() => setLocation('/interviews/history')}
               >
                 View All
@@ -161,7 +165,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-bold text-foreground">Performance Trend</h2>
               <p className="text-muted-foreground text-xs font-medium">Average score progress over last 7 days.</p>
             </div>
-            <Card className="h-[270px]">
+            <Card className="h-[270px] rounded-2xl bg-card/60 backdrop-blur-md border border-border/50">
               <CardContent className="p-4 pt-6 h-full flex flex-col justify-between">
                 <div className="h-[200px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -183,7 +187,7 @@ export default function Dashboard() {
                       <Tooltip
                         cursor={{ fill: 'hsl(var(--muted))' }}
                         contentStyle={{ 
-                          borderRadius: '8px', 
+                          borderRadius: '12px', 
                           border: '1px solid hsl(var(--border))',
                           background: 'hsl(var(--card))',
                           fontSize: '11px'
@@ -195,7 +199,7 @@ export default function Dashboard() {
                         maxBarSize={30}
                       >
                         {CHART_DATA.map((entry, index) => {
-                          const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
+                          const colors = ['#4285F4', '#34A853', '#FBBC05', '#EA4335'];
                           return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
                         })}
                       </Bar>

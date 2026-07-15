@@ -11,10 +11,10 @@ import { Code2, MessagesSquare, Laptop, Cpu, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const INTERVIEW_TYPES = [
-  { id: 'coding', title: 'Coding Interview', desc: 'Algorithms, data structures, and code execution.', icon: Code2 },
-  { id: 'behavioral', title: 'Behavioral prep', desc: 'STAR methodology, leadership, conflict resolution.', icon: MessagesSquare },
-  { id: 'system-design', title: 'System Design', desc: 'Scalability, microservices, system architecture.', icon: Laptop },
-  { id: 'ml', title: 'Machine Learning', desc: 'Deep learning, model training, ML design.', icon: Cpu },
+  { id: 'coding', title: 'Coding Interview', desc: 'Algorithms, data structures, and code execution.', icon: Code2, color: '#4285F4' },
+  { id: 'behavioral', title: 'Behavioral Prep', desc: 'STAR methodology, leadership, conflict resolution.', icon: MessagesSquare, color: '#34A853' },
+  { id: 'system-design', title: 'System Design', desc: 'Scalability, microservices, system architecture.', icon: Laptop, color: '#FBBC05' },
+  { id: 'ml', title: 'Machine Learning', desc: 'Deep learning, model training, ML design.', icon: Cpu, color: '#EA4335' },
 ] as const;
 
 export default function InterviewNew() {
@@ -42,15 +42,15 @@ export default function InterviewNew() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6 select-none">
+      <div className="max-w-2xl mx-auto space-y-6 select-none relative">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight">Configure Interview</h2>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1 select-text">
             Specify target roles, companies, and category for AI personalization.
           </p>
         </div>
 
-        <Card className="border border-border">
+        <Card className="border border-border/50 rounded-2xl bg-card/65 backdrop-blur-md shadow-sm">
           <CardHeader className="p-6">
             <CardTitle className="text-lg">Interview Details</CardTitle>
             <CardDescription className="text-xs">Provide details to align the AI interviewer parameters.</CardDescription>
@@ -64,7 +64,7 @@ export default function InterviewNew() {
                   value={role} 
                   onChange={(e) => setRole(e.target.value)} 
                   placeholder="e.g. Senior Frontend Engineer"
-                  className="h-9 text-xs"
+                  className="h-10 text-xs rounded-full px-4 border-border hover:border-foreground/10 focus:border-foreground/30 focus:ring-0 bg-background/50"
                 />
               </div>
               <div className="space-y-2">
@@ -74,7 +74,7 @@ export default function InterviewNew() {
                   value={company} 
                   onChange={(e) => setCompany(e.target.value)} 
                   placeholder="e.g. Stripe"
-                  className="h-9 text-xs"
+                  className="h-10 text-xs rounded-full px-4 border-border hover:border-foreground/10 focus:border-foreground/30 focus:ring-0 bg-background/50"
                 />
               </div>
             </div>
@@ -90,21 +90,24 @@ export default function InterviewNew() {
                       key={type.id}
                       onClick={() => setSelectedType(type.id)}
                       className={cn(
-                        "p-4 rounded-xl border border-border bg-card hover:border-foreground/20 cursor-pointer transition-all duration-200 select-none flex flex-col justify-between h-32",
-                        isSelected && "border-foreground ring-1 ring-foreground"
+                        "p-5 rounded-2xl border border-border bg-card/50 hover:border-foreground/15 cursor-pointer transition-all duration-200 select-none flex flex-col justify-between h-36 relative overflow-hidden",
+                        isSelected && "border-[#4285F4] ring-1 ring-[#4285F4] bg-[#4285F4]/[0.02]"
                       )}
                     >
+                      {/* Brand highlighted color dot */}
+                      <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: type.color }} />
+                      
                       <div className="flex items-center justify-between">
-                        <div className="p-2 rounded-lg bg-secondary text-foreground shrink-0 border border-border">
-                          <Icon className="h-4 w-4" />
+                        <div 
+                          className="p-3 rounded-full shrink-0 border border-border/30 text-white"
+                          style={{ backgroundColor: type.color }}
+                        >
+                          <Icon className="h-4.5 w-4.5" />
                         </div>
-                        {isSelected && (
-                          <span className="w-2 h-2 rounded-full bg-foreground" />
-                        )}
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-xs text-foreground leading-none">{type.title}</h4>
-                        <p className="text-[10px] text-muted-foreground leading-tight">{type.desc}</p>
+                      <div className="space-y-1 mt-2">
+                        <h4 className="font-bold text-sm text-foreground leading-none">{type.title}</h4>
+                        <p className="text-[10px] text-muted-foreground leading-snug select-text">{type.desc}</p>
                       </div>
                     </div>
                   );
@@ -112,10 +115,10 @@ export default function InterviewNew() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="p-6 border-t border-border flex items-center justify-end">
+          <CardFooter className="p-6 border-t border-border/40 flex items-center justify-end">
             <Button
               onClick={handleStart}
-              className="rounded-md gap-1.5 text-xs bg-foreground text-background hover:bg-foreground/90 h-9"
+              className="rounded-full gap-1.5 text-xs bg-[#4285F4] hover:bg-[#3b77db] text-white border-0 h-10 px-5 shadow-sm transition-colors font-semibold"
             >
               <PlusCircle className="h-4 w-4" />
               Generate Session & Start
@@ -126,3 +129,4 @@ export default function InterviewNew() {
     </DashboardLayout>
   );
 }
+export { InterviewNew };

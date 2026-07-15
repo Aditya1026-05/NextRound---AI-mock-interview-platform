@@ -59,7 +59,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground">
+    <div 
+      className="min-h-screen bg-background flex flex-col md:flex-row text-foreground relative z-0 overflow-hidden"
+      style={{
+        backgroundImage:
+          "radial-gradient(120% 90% at 15% 0%, rgba(66,133,244,0.06), transparent 60%), radial-gradient(90% 70% at 100% 15%, rgba(251,188,5,0.05), transparent 55%), radial-gradient(80% 60% at 85% 100%, rgba(234,67,53,0.04), transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(52,168,83,0.04), transparent 55%)",
+      }}
+    >
+      {/* Subtle background overlay for dark mode */}
+      <div className="absolute inset-0 pointer-events-none -z-10 hidden dark:block"
+        style={{
+          backgroundImage:
+            "radial-gradient(120% 90% at 15% 0%, rgba(66,133,244,0.10), transparent 60%), radial-gradient(90% 70% at 100% 15%, rgba(251,188,5,0.04), transparent 55%), radial-gradient(80% 60% at 85% 100%, rgba(234,67,53,0.04), transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(52,168,83,0.04), transparent 55%)",
+        }}
+      />
+
       {/* Sidebar Overlay for Mobile */}
       {!sidebarOpen && (
         <div 
@@ -73,14 +87,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         animate={{ width: sidebarOpen ? 260 : 72 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-card border-r border-border shrink-0 overflow-hidden md:relative md:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-card/60 backdrop-blur-md border-r border-border shrink-0 overflow-hidden md:relative md:translate-x-0",
           !sidebarOpen && "-translate-x-full md:translate-x-0"
         )}
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-foreground text-background w-8 h-8 rounded-md flex items-center justify-center font-semibold text-sm shadow-sm shrink-0">
+            <div className="bg-[#4285F4] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
               io
             </div>
             {sidebarOpen && (
@@ -90,7 +104,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
           {sidebarOpen && (
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 hidden md:inline-flex">
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 rounded-full hidden md:inline-flex">
               <PanelLeft className="h-4 w-4 text-muted-foreground" />
             </Button>
           )}
@@ -122,13 +136,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <Link key={item.href} href={item.href}>
                       <span
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
+                          "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
                           isActive
-                            ? "bg-foreground/5 text-foreground"
+                            ? "bg-[#4285F4]/10 text-[#4285F4] dark:text-[#4285F4] font-semibold"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                       >
-                        <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-foreground" : "text-muted-foreground")} />
+                        <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#4285F4]" : "text-muted-foreground")} />
                         {sidebarOpen && (
                           <span className="flex-1">{item.label}</span>
                         )}
@@ -147,7 +161,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className={cn(
-                  "flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors overflow-hidden",
+                  "flex items-center gap-3 p-2 rounded-full hover:bg-muted cursor-pointer transition-colors overflow-hidden",
                   !sidebarOpen && "justify-center"
                 )}>
                   <Avatar className="h-8 w-8 border border-border">
@@ -166,7 +180,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-52 ml-2" align="start" forceMount>
+              <DropdownMenuContent className="w-52 ml-2 rounded-xl" align="start" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{profile.name}</p>
@@ -175,13 +189,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center w-full cursor-pointer">
+                  <Link href="/settings" className="flex items-center w-full cursor-pointer rounded-lg">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer rounded-lg">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -192,11 +206,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </motion.aside>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-4 md:px-8 bg-background border-b border-border sticky top-0 z-40">
+        <header className="h-16 flex items-center justify-between px-4 md:px-8 bg-background/40 backdrop-blur-md border-b border-border sticky top-0 z-40">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-9 w-9 rounded-full">
               <PanelLeft className="h-4 w-4 text-foreground" />
             </Button>
             <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
@@ -217,13 +231,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input 
                 placeholder="Search resources..." 
-                className="pl-9 h-8 bg-muted/65 border-transparent text-xs hover:bg-muted focus:bg-background focus:border-border rounded-full" 
+                className="pl-9 h-8 bg-muted/60 border-transparent text-xs hover:bg-muted focus:bg-background focus:border-border rounded-full" 
               />
             </div>
             
             <ThemeToggle />
             
-            <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs font-semibold bg-gradient-to-r from-violet-600/10 to-indigo-600/10 hover:from-violet-600/15 hover:to-indigo-600/15 text-violet-700 dark:text-violet-300 border-violet-500/20">
+            <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs font-semibold bg-gradient-to-r from-violet-600/10 to-indigo-600/10 hover:from-violet-600/15 hover:to-indigo-600/15 text-violet-700 dark:text-violet-300 border-violet-500/20 shadow-sm">
               <Sparkles className="h-3.5 w-3.5" />
               AI Premium
             </Button>
@@ -231,7 +245,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background/50">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>

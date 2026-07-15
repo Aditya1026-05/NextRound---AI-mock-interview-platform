@@ -9,6 +9,7 @@ export interface StatCardProps {
   icon?: LucideIcon;
   trend?: string;
   trendType?: 'positive' | 'negative' | 'neutral';
+  colorTheme?: 'blue' | 'green' | 'yellow' | 'red' | 'indigo';
   className?: string;
 }
 
@@ -18,36 +19,55 @@ export function StatCard({
   icon: Icon,
   trend,
   trendType = 'neutral',
+  colorTheme = 'blue',
   className,
 }: StatCardProps) {
+  const getThemeColorClass = () => {
+    switch (colorTheme) {
+      case 'green': return 'text-[#34A853] bg-[#34A853]/10 border-[#34A853]/20';
+      case 'yellow': return 'text-[#FBBC05] bg-[#FBBC05]/10 border-[#FBBC05]/20';
+      case 'red': return 'text-[#EA4335] bg-[#EA4335]/10 border-[#EA4335]/20';
+      case 'indigo': return 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20';
+      case 'blue':
+      default:
+        return 'text-[#4285F4] bg-[#4285F4]/10 border-[#4285F4]/20';
+    }
+  };
+
   return (
-    <Card className={cn("overflow-hidden select-none hover:shadow-md transition-shadow duration-300", className)}>
+    <Card className={cn(
+      "overflow-hidden select-none hover:shadow-md hover:border-foreground/15 transition-all duration-300 rounded-2xl bg-card/65 backdrop-blur-md border border-border/50",
+      className
+    )}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
           {Icon && (
-            <div className="p-2 rounded-lg bg-secondary text-foreground shrink-0 border border-border">
+            <div className={cn(
+              "p-2.5 rounded-full shrink-0 border",
+              getThemeColorClass()
+            )}>
               <Icon className="h-4 w-4" />
             </div>
           )}
         </div>
 
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight text-foreground select-text">
+          <span className="text-3xl font-extrabold tracking-tight text-foreground select-text">
             {value}
           </span>
         </div>
 
         {trend && (
-          <div className="mt-2.5 flex items-center gap-1">
+          <div className="mt-3 flex items-center gap-1.5">
             <span
               className={cn(
-                "text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
-                trendType === 'positive' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                trendType === 'negative' && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-                trendType === 'neutral' && "bg-muted text-muted-foreground"
+                "text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 uppercase tracking-wider border",
+                trendType === 'positive' && "bg-[#34A853]/10 text-[#34A853] border-[#34A853]/10",
+                trendType === 'negative' && "bg-[#EA4335]/10 text-[#EA4335] border-[#EA4335]/10",
+                trendType === 'neutral' && "bg-muted text-muted-foreground border-border"
               )}
             >
               {trend}

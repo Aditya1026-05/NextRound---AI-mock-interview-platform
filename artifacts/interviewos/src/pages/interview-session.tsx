@@ -200,7 +200,7 @@ export default function InterviewSession() {
 
                 {/* Chat Inputs */}
                 <div className="p-3 border-t border-border shrink-0 bg-card">
-                  <div className="relative flex items-center rounded-lg border border-border bg-background focus-within:border-foreground/35 p-1 select-none">
+                  <div className="relative flex items-center rounded-full border border-border bg-background focus-within:border-foreground/35 px-2 py-0.5 select-none">
                     <Input
                       placeholder={isListening ? "Mic is listening... or type here..." : "Ask a question, propose solution..."}
                       value={inputVal}
@@ -212,7 +212,7 @@ export default function InterviewSession() {
                       <Button 
                         onClick={handleSendMessage} 
                         size="icon" 
-                        className="h-7 w-7 rounded-md bg-foreground text-background hover:bg-foreground/90 shrink-0"
+                        className="h-7 w-7 rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0"
                       >
                         <Send className="h-3 w-3" />
                       </Button>
@@ -276,9 +276,9 @@ export default function InterviewSession() {
                     </div>
                     <Button 
                       onClick={handleRunCode}
-                      className="rounded-md gap-1 h-7 text-[10px] px-2.5 bg-foreground text-background hover:bg-foreground/90 border-0 shrink-0 font-semibold"
+                      className="rounded-full gap-1 h-7 text-[10px] px-3 bg-[#4285F4] hover:bg-[#3b77db] text-white border-0 shrink-0 font-semibold"
                     >
-                      <Play className="h-3 w-3 fill-current" />
+                      <Play className="h-2.5 w-2.5 fill-current" />
                       Run Code
                     </Button>
                   </div>
