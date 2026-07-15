@@ -1,20 +1,21 @@
 import * as React from "react"
 import { AlertCircle } from "lucide-react"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 
 export default function DesignSystem() {
   return (
-    <div className="space-y-12 max-w-5xl mx-auto pb-20">
-      <div>
-        <h1 className="text-5xl font-bold tracking-tighter text-foreground">Design System</h1>
-        <p className="text-muted-foreground mt-2 text-xl">Living style guide for InterviewOS UI primitives.</p>
-      </div>
+    <DashboardLayout>
+      <div className="space-y-12 max-w-5xl mx-auto pb-20">
+        <div>
+          <h1 className="text-5xl font-bold tracking-tighter text-foreground">Design System</h1>
+          <p className="text-muted-foreground mt-2 text-xl">Living style guide for InterviewOS UI primitives.</p>
+        </div>
 
       {/* Colors */}
       <section className="space-y-4">
@@ -160,7 +161,8 @@ export default function DesignSystem() {
           </Card>
         </div>
       </section>
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }
 

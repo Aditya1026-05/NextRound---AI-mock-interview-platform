@@ -1,95 +1,95 @@
-import * as React from "react"
-import { Monitor, User, Bell, Shield, Paintbrush } from "lucide-react"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Separator } from "@/components/ui/separator"
+import React, { useEffect, useState } from 'react';
+import { useUIStore } from '@/store/useUIStore';
+import { useUserStore } from '@/store/useUserStore';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { SettingsLayout } from '@/components/layouts/SettingsLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Sparkles, Key, CheckCircle2 } from 'lucide-react';
 
 export default function Settings() {
+  const { setBreadcrumbs } = useUIStore();
+  const { profile, setProfile } = useUserStore();
+  
+  const [name, setName] = useState(profile?.name || '');
+  const [role, setRole] = useState(profile?.targetRole || '');
+  const [company, setCompany] = useState(profile?.targetCompany || '');
+
+  useEffect(() => {
+    setBreadcrumbs(['Dashboard', 'Settings']);
+  }, [setBreadcrumbs]);
+
+  const handleSave = () => {
+    setProfile({
+      name,
+      targetRole: role,
+      targetCompany: company,
+    });
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-4xl font-bold tracking-tighter text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Manage your account settings and preferences.</p>
-      </div>
+    <DashboardLayout>
+      <SettingsLayout>
+        <div className="space-y-6 select-none">
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Profile Details</h3>
+            <p className="text-muted-foreground text-xs">Manage your personal profile and job hunting parameters.</p>
+          </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar Navigation */}
-        <nav className="w-full md:w-64 space-y-1">
-          <Button variant="secondary" className="w-full justify-start rounded-full">
-            <User className="mr-2 h-4 w-4" /> Account
-          </Button>
-          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
-            <Paintbrush className="mr-2 h-4 w-4" /> Appearance
-          </Button>
-          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
-            <Bell className="mr-2 h-4 w-4" /> Notifications
-          </Button>
-          <Button variant="ghost" className="w-full justify-start rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary">
-            <Shield className="mr-2 h-4 w-4" /> Security
-          </Button>
-        </nav>
+          <div className="space-y-4 max-w-md">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-semibold">Full Name</Label>
+              <Input 
+                id="name" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="target-role" className="text-xs font-semibold">Target Position</Label>
+              <Input 
+                id="target-role" 
+                value={role} 
+                onChange={(e) => setRole(e.target.value)} 
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="target-company" className="text-xs font-semibold">Target Company</Label>
+              <Input 
+                id="target-company" 
+                value={company} 
+                onChange={(e) => setCompany(e.target.value)} 
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
 
-        {/* Content Area */}
-        <div className="flex-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>Update your personal information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Display Name</Label>
-                <Input id="name" defaultValue="Alex Engineer" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="alex@example.com" />
-              </div>
-              <div className="pt-4">
-                <Button>Save Changes</Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* SaaS Plan tier */}
+          <div className="border border-border bg-muted/20 p-4 rounded-xl max-w-md flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-bold text-foreground">SaaS Subscription Plan</p>
+              <p className="text-[10px] text-muted-foreground leading-none">Pro Developer Plan — Unlimited Evaluations</p>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 dark:text-violet-300 bg-violet-500/10 px-2.5 py-0.5 rounded-full select-none">
+              <Sparkles className="h-3 w-3 animate-pulse" />
+              ACTIVE PRO
+            </span>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize how InterviewOS looks on your device.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Theme</h4>
-                  <p className="text-sm text-muted-foreground">Select light or dark mode.</p>
-                </div>
-                <ThemeToggle />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium">Reduce Motion</h4>
-                  <p className="text-sm text-muted-foreground">Disable subtle animations.</p>
-                </div>
-                <Button variant="outline" size="sm">Enabled</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-destructive/20 bg-destructive/5">
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>Irreversible actions for your account.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="destructive">Delete Account</Button>
-            </CardContent>
-          </Card>
+          <div className="border-t border-border pt-4 flex items-center justify-end max-w-md select-none">
+            <Button 
+              onClick={handleSave}
+              className="rounded-md text-xs bg-foreground text-background hover:bg-foreground/90 h-9 font-semibold"
+            >
+              Save Profile Changes
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
-  )
+      </SettingsLayout>
+    </DashboardLayout>
+  );
 }
+export { Settings };
