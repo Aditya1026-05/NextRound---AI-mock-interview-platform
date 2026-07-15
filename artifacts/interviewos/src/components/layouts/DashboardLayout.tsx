@@ -14,7 +14,8 @@ import {
   User, 
   ChevronRight, 
   LogOut,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ const SIDEBAR_ITEMS = [
   ]},
   { group: 'Preparation', items: [
     { icon: Code2, label: 'Practice Hub', href: '/practice' },
+    { icon: FileText, label: 'Resume Intelligence', href: '/resume' },
     { icon: History, label: 'Session History', href: '/interviews/history' },
   ]},
   { group: 'System', items: [
