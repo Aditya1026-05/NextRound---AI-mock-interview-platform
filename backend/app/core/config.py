@@ -9,12 +9,12 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    PROJECT_NAME: str = "InterviewOS"
+    PROJECT_NAME: str = "NextRound"
     ENV: str = "development"
     DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/interviewos"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nextround"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

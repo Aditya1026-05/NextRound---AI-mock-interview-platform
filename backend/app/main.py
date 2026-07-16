@@ -9,7 +9,7 @@ from app.core.logging import setup_logging
 setup_logging()
 
 app = FastAPI(
-    title="InterviewOS API",
+    title="NextRound API",
     description="Production-grade AI-powered mock interview simulator API backend.",
     version="1.0.0",
     lifespan=lifespan,

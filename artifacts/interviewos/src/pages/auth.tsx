@@ -57,12 +57,14 @@ export default function Auth() {
 
       {/* Top Bar */}
       <header className="h-20 px-6 md:px-12 flex items-center justify-between shrink-0">
-        <Link href="/" className="flex items-center gap-3 cursor-pointer">
-          <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-sm">
-            IO
-          </div>
-          <span className="font-bold text-xl tracking-tight flex items-center gap-1.5">
-            InterviewOS
+        <Link href="/" className="flex items-center gap-1.0 cursor-pointer group">
+          <img 
+            src="/logo.png" 
+            alt="NextRound Logo" 
+            className="w-12 h-12 object-contain select-none shrink-0"
+          />
+          <span className="font-bold text-xl tracking-tight text-foreground group-hover:text-foreground/80 transition-colors select-none">
+            NextRound
           </span>
         </Link>
         <div className="flex items-center gap-4">

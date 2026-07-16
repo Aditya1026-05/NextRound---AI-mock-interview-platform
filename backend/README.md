@@ -1,6 +1,6 @@
-# InterviewOS Backend
+# NextRound Backend
 
-Production-ready FastAPI backend skeleton for InterviewOS.
+Production-ready FastAPI backend skeleton for NextRound.
 
 ## Prerequisites
 

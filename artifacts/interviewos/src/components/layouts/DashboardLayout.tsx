@@ -95,13 +95,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#4285F4] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-              io
-            </div>
+          <div className="flex items-center gap-1.0">
+            <img 
+              src="/logo.png" 
+              alt="NextRound Logo" 
+              className="w-10 h-10 object-contain shrink-0 select-none"
+            />
             {sidebarOpen && (
-              <span className="font-semibold text-base tracking-tight whitespace-nowrap">
-                InterviewOS
+              <span className="font-bold text-base tracking-tight text-foreground select-none">
+                NextRound
               </span>
             )}
           </div>

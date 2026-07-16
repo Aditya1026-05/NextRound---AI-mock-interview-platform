@@ -8,7 +8,7 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/interviewos
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/nextround
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
@@ -21,7 +21,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=interviewos
+      - POSTGRES_DB=nextround
     volumes:
       - pgdata:/var/lib/postgresql/data
 
