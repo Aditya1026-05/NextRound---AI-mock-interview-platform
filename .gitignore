@@ -57,6 +57,7 @@ venv/
 .env
 .env.local
 .env.*
+!.env.example
 
 # Python caches (safety)
 __pycache__/
