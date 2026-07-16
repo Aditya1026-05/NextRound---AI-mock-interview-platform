@@ -6,7 +6,7 @@ NextRound is a production-grade mock interview simulator designed to help engine
 
 ## 📂 Project Architecture & Directories
 
-* **`artifacts/interviewos/`**: React, Vite, Tailwind CSS v4, and Zustand state-managed frontend.
+* **`artifacts/nextround/`**: React, Vite, Tailwind CSS v4, and Zustand state-managed frontend.
 * **`backend/`**: FastAPI, SQLAlchemy 2.0 (Async), PostgreSQL, Redis, LiteLLM, and LangGraph-backed agent workspace.
 
 ---
@@ -56,7 +56,7 @@ cd backend
 
 Navigate to the frontend directory:
 ```bash
-cd artifacts/interviewos
+cd artifacts/nextround
 ```
 
 1. **Install Frontend Dependencies**:

@@ -1,8 +1,8 @@
 kind = "web"
 previewPath = "/"
-title = "InterviewOS"
+title = "NextRound"
 version = "1.0.0"
-id = "artifacts/interviewos"
+id = "artifacts/nextround"
 router = "path"
 
 [[services]]
@@ -11,12 +11,12 @@ paths = [ "/" ]
 localPort = 22643
 
 [services.development]
-run = "pnpm --filter @workspace/interviewos run dev"
+run = "pnpm --filter @workspace/nextround run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/interviewos", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/nextround", "run", "build" ]
 serve = "static"
-publicDir = "artifacts/interviewos/dist/public"
+publicDir = "artifacts/nextround/dist/public"
 
 [[services.production.rewrites]]
 from = "/*"

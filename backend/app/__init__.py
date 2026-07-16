@@ -1,4 +1,4 @@
-"""InterviewOS Application package.
+"""NextRound Application package.
 
 Minimal stubs.
 """

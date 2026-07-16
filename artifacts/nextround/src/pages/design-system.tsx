@@ -14,7 +14,7 @@ export default function DesignSystem() {
       <div className="space-y-12 max-w-5xl mx-auto pb-20">
         <div>
           <h1 className="text-5xl font-bold tracking-tighter text-foreground">Design System</h1>
-          <p className="text-muted-foreground mt-2 text-xl">Living style guide for InterviewOS UI primitives.</p>
+          <p className="text-muted-foreground mt-2 text-xl">Living style guide for NextRound UI primitives.</p>
         </div>
 
       {/* Colors */}

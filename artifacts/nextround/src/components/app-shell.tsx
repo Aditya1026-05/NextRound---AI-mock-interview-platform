@@ -32,11 +32,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-secondary flex flex-col md:flex-row">
       {/* Mobile Navbar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-background border-b z-20 sticky top-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!isSidebarOpen)}>
             <PanelLeft className="h-5 w-5" />
           </Button>
-          <span className="font-bold text-lg tracking-tight">InterviewOS</span>
+          <span className="font-bold text-lg tracking-tight">NextRound</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -58,17 +58,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           >
             <div className="h-16 flex items-center px-4 border-b shrink-0 overflow-hidden">
-              <div className="flex items-center gap-3 w-full">
-                <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm">
-                  IO
-                </div>
+              <div className="flex items-center gap-1.5 w-full">
+                <img 
+                  src="/logo.png" 
+                  alt="NextRound Logo" 
+                  className="w-8 h-8 object-contain shrink-0 select-none"
+                />
                 <AnimatePresence>
                   {isSidebarOpen && (
                     <motion.span 
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       className="font-bold text-lg tracking-tight whitespace-nowrap"
                     >
-                      InterviewOS
+                      NextRound
                     </motion.span>
                   )}
                 </AnimatePresence>

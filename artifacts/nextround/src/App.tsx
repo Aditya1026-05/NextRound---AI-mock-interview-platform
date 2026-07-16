@@ -55,7 +55,7 @@ function ProtectedRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="interviewos-theme">
+      <ThemeProvider defaultTheme="light" storageKey="nextround-theme">
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
             <Switch>

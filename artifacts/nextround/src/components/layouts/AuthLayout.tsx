@@ -11,12 +11,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="bg-foreground text-background w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
-            io
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">InterviewOS</h1>
+          <img 
+            src="/logo.png" 
+            alt="NextRound Logo" 
+            className="w-12 h-12 object-contain select-none shrink-0"
+          />
+          <h1 className="text-2xl font-bold tracking-tight">NextRound</h1>
           <p className="text-xs text-muted-foreground max-w-xs">
-            The AI-powered interview operating system for engineering teams and candidates.
+            The AI-powered mock interview simulator for engineering candidates.
           </p>
         </div>
 

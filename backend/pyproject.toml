@@ -1,5 +1,5 @@
 [project]
-name = "interviewos-backend"
+name = "nextround-backend"
 version = "0.1.0"
 description = "AI-powered interview operating system backend"
 readme = "README.md"
