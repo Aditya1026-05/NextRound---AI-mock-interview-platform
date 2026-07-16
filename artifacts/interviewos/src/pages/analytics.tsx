@@ -4,13 +4,13 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { StatCard } from '@/components/shared/StatCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Award, Zap, BrainCircuit, Target, CheckCircle2 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   RadarChart,
   PolarGrid,
@@ -92,37 +92,37 @@ export default function Analytics() {
                   <AreaChart data={SCORE_HISTORY}>
                     <defs>
                       <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="week" 
-                      axisLine={false} 
-                      tickLine={false} 
+                    <XAxis
+                      dataKey="week"
+                      axisLine={false}
+                      tickLine={false}
                       tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                     />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
                       tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                       domain={[0, 100]}
                     />
                     <Tooltip
-                      contentStyle={{ 
-                        borderRadius: '8px', 
+                      contentStyle={{
+                        borderRadius: '8px',
                         border: '1px solid hsl(var(--border))',
                         background: 'hsl(var(--card))',
                         fontSize: '11px'
                       }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="hsl(var(--chart-1))" 
-                      fillOpacity={1} 
-                      fill="url(#scoreColor)" 
+                    <Area
+                      type="monotone"
+                      dataKey="score"
+                      stroke="hsl(var(--chart-1))"
+                      fillOpacity={1}
+                      fill="url(#scoreColor)"
                       strokeWidth={2}
                     />
                   </AreaChart>
@@ -142,17 +142,17 @@ export default function Analytics() {
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="75%" data={SKILL_MASTERY}>
                     <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis 
-                      dataKey="subject" 
+                    <PolarAngleAxis
+                      dataKey="subject"
                       tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 500 }}
                     />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
-                    <Radar 
-                      name="Alex Developer" 
-                      dataKey="A" 
-                      stroke="hsl(var(--chart-2))" 
-                      fill="hsl(var(--chart-2))" 
-                      fillOpacity={0.2} 
+                    <Radar
+                      name="Aditya Tayal"
+                      dataKey="A"
+                      stroke="hsl(var(--chart-2))"
+                      fill="hsl(var(--chart-2))"
+                      fillOpacity={0.2}
                     />
                   </RadarChart>
                 </ResponsiveContainer>

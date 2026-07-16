@@ -21,7 +21,7 @@ interface UserState {
 
 export const useUserStore = create<UserState>((set) => ({
   profile: {
-    name: 'Alex Developer',
+    name: 'Aditya Tayal',
     email: 'alex@example.com',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80',
     targetRole: 'Senior Frontend Engineer',
