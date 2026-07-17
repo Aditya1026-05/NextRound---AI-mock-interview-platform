@@ -1,6 +1,6 @@
 from app.models.identity.user import User
 
-# Interview Domain
+# Interview Domain - completed
 from app.models.interview.company import Company
 from app.models.interview.competency import Competency
 from app.models.interview.interview_competency_score import InterviewCompetencyScore
