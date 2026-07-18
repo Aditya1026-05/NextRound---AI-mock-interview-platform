@@ -20,7 +20,6 @@ from app.core.security import (
 from app.models.identity.user import User
 from app.schemas.auth.request import (
     RefreshTokenRequest,
-    UserLoginRequest,
     UserRegisterRequest,
 )
 from app.schemas.auth.response import AuthResponse, TokenResponse, UserResponse
@@ -70,9 +69,9 @@ class AuthService:
             refresh_token=refresh_token,
         )
 
-    async def login_user(self, schema: UserLoginRequest) -> AuthResponse:
+    async def login_user(self, email: str, password: str) -> AuthResponse:
         """Verify user credentials and generate token credentials."""
-        user = await self.authenticate_user(schema.email, schema.password)
+        user = await self.authenticate_user(email, password)
 
         # Update last login time
         user.last_login_at = datetime.now(UTC)

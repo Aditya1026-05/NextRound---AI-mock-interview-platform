@@ -12,7 +12,6 @@ from app.core.exceptions import (
 from app.core.security import create_refresh_token
 from app.schemas.auth.request import (
     RefreshTokenRequest,
-    UserLoginRequest,
     UserRegisterRequest,
 )
 from app.services.identity.auth import AuthService
@@ -85,8 +84,7 @@ async def test_login_user_success(db):
     assert user_db.last_login_at is None
 
     # Log in
-    login_request = UserLoginRequest(email=email, password=password)
-    response = await service.login_user(login_request)
+    response = await service.login_user(email=email, password=password)
 
     assert response.user.email == email
     assert response.access_token is not None
@@ -115,16 +113,12 @@ async def test_login_user_invalid_credentials(db):
 
     # Login with wrong password
     with pytest.raises(InvalidCredentialsException):
-        await service.login_user(
-            UserLoginRequest(email=email, password="wrong_password")
-        )
+        await service.login_user(email=email, password="wrong_password")
 
     # Login with non-existent email
     with pytest.raises(InvalidCredentialsException):
         await service.login_user(
-            UserLoginRequest(
-                email="non_existent@example.com", password="some_password"
-            )
+            email="non_existent@example.com", password="some_password"
         )
 
 
@@ -150,9 +144,7 @@ async def test_login_user_inactive(db):
 
     # Attempt login
     with pytest.raises(InactiveUserException):
-        await service.login_user(
-            UserLoginRequest(email=email, password=password)
-        )
+        await service.login_user(email=email, password=password)
 
 
 @pytest.mark.asyncio

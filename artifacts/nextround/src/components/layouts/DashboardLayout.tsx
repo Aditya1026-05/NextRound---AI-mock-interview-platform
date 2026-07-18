@@ -54,9 +54,21 @@ const SIDEBAR_ITEMS = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { sidebarOpen, toggleSidebar, breadcrumbs } = useUIStore();
-  const { profile, logout } = useUserStore();
+  const { profile, token, logout } = useUserStore();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (token) {
+      try {
+        await fetch('http://localhost:8000/api/v1/auth/logout', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log out on server:', err);
+      }
+    }
     logout();
   };
 
@@ -119,8 +131,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {SIDEBAR_ITEMS.map((group, gIdx) => {
             // Check if group is visible
             const filteredItems = group.items.filter(item => {
-              if (item.roles && profile) {
-                return item.roles.includes(profile.subscriptionTier);
+              if (item.roles) {
+                return profile ? item.roles.includes(profile.subscriptionTier) : false;
               }
               return true;
             });

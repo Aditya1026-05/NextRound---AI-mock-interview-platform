@@ -24,9 +24,35 @@ import DesignSystem from '@/pages/design-system';
 import NotFound from '@/pages/not-found';
 import Auth from '@/pages/auth';
 
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useUserStore } from '@/store/useUserStore';
+
 const queryClient = new QueryClient();
 
 function ProtectedRouter() {
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const isLoading = useUserStore((state) => state.isLoading);
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation('/login');
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -53,6 +79,12 @@ function ProtectedRouter() {
 }
 
 function App() {
+  const initialize = useUserStore((state) => state.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="nextround-theme">

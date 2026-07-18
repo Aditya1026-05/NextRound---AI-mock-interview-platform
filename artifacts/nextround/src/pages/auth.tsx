@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
+import { useUserStore } from "@/store/useUserStore"
+import { useToast } from "@/hooks/use-toast"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
@@ -24,15 +26,93 @@ function GoogleIcon() {
 export default function Auth() {
   const [location, setLocation] = useLocation()
   const isSignUp = location === "/signup"
+  const loginStore = useUserStore((state) => state.login)
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = React.useState(false)
 
   const handleToggle = (signup: boolean) => {
     setLocation(signup ? "/signup" : "/login")
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login/signup, redirect to dashboard
-    setLocation("/dashboard")
+    const target = e.target as HTMLFormElement
+    const email = (target.elements.namedItem("email") as HTMLInputElement).value
+    const password = (target.elements.namedItem("password") as HTMLInputElement).value
+    const fullName = isSignUp ? (target.elements.namedItem("name") as HTMLInputElement).value : ""
+    const confirmPassword = isSignUp ? (target.elements.namedItem("confirm-password") as HTMLInputElement).value : ""
+
+    if (isSignUp && password !== confirmPassword) {
+      toast({
+        title: "Registration Failed",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const url = isSignUp
+        ? "http://localhost:8000/api/v1/auth/register"
+        : "http://localhost:8000/api/v1/auth/login"
+
+      let response: Response
+
+      if (isSignUp) {
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            full_name: fullName,
+          }),
+        })
+      } else {
+        const formData = new URLSearchParams()
+        formData.append("username", email)
+        formData.append("password", password)
+
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: formData.toString(),
+        })
+      }
+
+      if (response.ok) {
+        const data = await response.json()
+        loginStore(data.user, data.access_token, data.refresh_token)
+        toast({
+          title: isSignUp ? "Account Created" : "Login Successful",
+          description: isSignUp
+            ? "Welcome to NextRound!"
+            : "Successfully logged in.",
+        })
+        setLocation("/dashboard")
+      } else {
+        const errData = await response.json()
+        toast({
+          title: isSignUp ? "Sign Up Failed" : "Login Failed",
+          description: errData.detail || "Something went wrong.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error(err)
+      toast({
+        title: "Connection Error",
+        description: "Could not reach the authentication server.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -253,9 +333,16 @@ export default function Auth() {
                   )}
                 </AnimatePresence>
 
-                <Button type="submit" className="w-full rounded-full h-11 mt-6 text-base font-medium shadow-md bg-gradient-to-r from-[#4285F4] to-[#2b68ce] text-white hover:opacity-90 border-0 transition-opacity">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full rounded-full h-11 mt-6 text-base font-medium shadow-md bg-gradient-to-r from-[#4285F4] to-[#2b68ce] text-white hover:opacity-90 border-0 transition-opacity"
+                >
+                  {isLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2 inline-block" />
+                  ) : null}
                   {isSignUp ? "Create account" : "Log in"}
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  {!isLoading && <ArrowRight className="ml-2 w-4 h-4 inline-block" />}
                 </Button>
               </form>
 
