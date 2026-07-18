@@ -8,7 +8,7 @@ from alembic import context
 from app.core.config import settings
 
 # import Base and metadata
-from app.db.base import Base
+from app.db.base_models import Base
 
 config = context.config
 

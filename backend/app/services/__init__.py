@@ -1,2 +1,3 @@
-"""Business logic services."""
-pass
+from app.services.identity import AuthService
+
+__all__ = ["AuthService"]
