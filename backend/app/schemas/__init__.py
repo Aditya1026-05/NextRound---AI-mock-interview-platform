@@ -1,2 +1,53 @@
 """Validation Pydantic schemas."""
-pass
+
+from app.schemas.auth import (
+    AuthResponse,
+    RefreshTokenRequest,
+    TokenResponse,
+    UserLoginRequest,
+    UserRegisterRequest,
+    UserResponse,
+)
+from app.schemas.resume import (
+    EducationCreateRequest,
+    EducationResponse,
+    EducationUpdateRequest,
+    ProjectCreateRequest,
+    ProjectResponse,
+    ProjectUpdateRequest,
+    ResumeCreateRequest,
+    ResumeResponse,
+    ResumeUpdateRequest,
+    SkillCategoryCreateRequest,
+    SkillCategoryResponse,
+    SkillCreateRequest,
+    SkillResponse,
+    WorkExperienceCreateRequest,
+    WorkExperienceResponse,
+    WorkExperienceUpdateRequest,
+)
+
+__all__ = [
+    "AuthResponse",
+    "EducationCreateRequest",
+    "EducationResponse",
+    "EducationUpdateRequest",
+    "ProjectCreateRequest",
+    "ProjectResponse",
+    "ProjectUpdateRequest",
+    "RefreshTokenRequest",
+    "ResumeCreateRequest",
+    "ResumeResponse",
+    "ResumeUpdateRequest",
+    "SkillCategoryCreateRequest",
+    "SkillCategoryResponse",
+    "SkillCreateRequest",
+    "SkillResponse",
+    "TokenResponse",
+    "UserLoginRequest",
+    "UserRegisterRequest",
+    "UserResponse",
+    "WorkExperienceCreateRequest",
+    "WorkExperienceResponse",
+    "WorkExperienceUpdateRequest",
+]
