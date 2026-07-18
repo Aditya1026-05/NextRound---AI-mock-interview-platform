@@ -1,12 +1,13 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.shared.enums.resume import ResumeStatus
 from app.shared.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -28,6 +29,15 @@ class Resume(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
     )
     file_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[ResumeStatus] = mapped_column(
+        String(50),
+        default=ResumeStatus.UPLOADED,
+        server_default=text("'uploaded'"),
+        nullable=False,
+    )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     parsed_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     is_primary: Mapped[bool] = mapped_column(

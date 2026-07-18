@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     JUDGE0_URL: str = "http://localhost:2358"
     JUDGE0_API_KEY: str | None = None
 
+    # Storage
+    UPLOAD_DIR: str = "uploads"
+
     # JWT Security Configurations
     SECRET_KEY: str = "supersecretkey_change_me_in_production"
     JWT_ALGORITHM: str = "HS256"

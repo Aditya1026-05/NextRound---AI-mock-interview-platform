@@ -6,12 +6,14 @@ from app.shared.enums.interview import (
     ResponseType,
     SessionStatus,
 )
+from app.shared.enums.resume import ResumeStatus
 
 __all__ = [
     "DifficultyType",
     "EndedReasonType",
     "InterviewType",
     "ResponseType",
+    "ResumeStatus",
     "SessionStatus",
     "TokenType",
 ]

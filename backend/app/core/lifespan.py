@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 import redis.asyncio as aioredis
@@ -16,6 +17,9 @@ redis_client: aioredis.Redis | None = None
 async def lifespan(app: FastAPI):
     global redis_client
     logger.info("Initializing resources inside application lifespan...")
+    
+    # Ensure UPLOAD_DIR exists
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     
     # Initialize Redis connection pool
     redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
