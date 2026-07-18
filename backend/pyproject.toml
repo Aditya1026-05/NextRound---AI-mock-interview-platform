@@ -15,6 +15,8 @@ dependencies = [
     "litellm==1.45.0",
     "structlog>=24.1.0",
     "alembic>=1.13.1",
+    "pwdlib[argon2]>=0.2.0",
+    "python-jose[cryptography]>=3.3.0",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +33,7 @@ extend-exclude = ["alembic"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "C4", "RUF"]
-ignore = []
+ignore = ["B008"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

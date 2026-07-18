@@ -1,3 +1,4 @@
+from app.shared.enums.auth import TokenType
 from app.shared.enums.interview import (
     DifficultyType,
     EndedReasonType,
@@ -12,4 +13,5 @@ __all__ = [
     "InterviewType",
     "ResponseType",
     "SessionStatus",
+    "TokenType",
 ]
