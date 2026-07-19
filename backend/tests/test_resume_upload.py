@@ -12,6 +12,7 @@ from httpx import ASGITransport, AsyncClient
 from app.core.config import settings
 from app.dependencies.providers import get_db
 from app.main import app
+from app.schemas.resume.ai import ParsedResumeResponse
 from app.shared.enums.resume import ResumeStatus
 
 
@@ -70,10 +71,27 @@ def create_mock_docx(text: str) -> bytes:
 
 
 @pytest.mark.asyncio
-async def test_upload_pdf_success(client, test_user_token):
+@patch("app.services.resume.parser_service.ResumeParserService.parse_resume")
+async def test_upload_pdf_success(mock_parse, client, test_user_token):
     token, _user = test_user_token
     headers = {"Authorization": f"Bearer {token}"}
     pdf_content = create_mock_pdf("Candidate Resume text contents here")
+
+    mock_parse.return_value = ParsedResumeResponse(
+        resume_id=uuid.uuid4(),
+        status=ResumeStatus.REVIEW_PENDING,
+        full_name="Jane Doe",
+        summary="Summary text",
+        education=[],
+        work_experiences=[],
+        projects=[],
+        skills=[],
+        certifications=[],
+        achievements=[],
+        confidence_score=0.95,
+        parser_provider="gemini",
+        parser_model="gemini-2.5-flash",
+    )
 
     files = {
         "file": (
@@ -90,7 +108,7 @@ async def test_upload_pdf_success(client, test_user_token):
 
     data = response.json()
     assert "resume_id" in data
-    assert data["status"] == ResumeStatus.UPLOADED
+    assert data["status"] == ResumeStatus.REVIEW_PENDING
 
     # Verify file exists on disk
     assert os.path.exists(settings.UPLOAD_DIR)
@@ -103,10 +121,27 @@ async def test_upload_pdf_success(client, test_user_token):
 
 
 @pytest.mark.asyncio
-async def test_upload_docx_success(client, test_user_token):
+@patch("app.services.resume.parser_service.ResumeParserService.parse_resume")
+async def test_upload_docx_success(mock_parse, client, test_user_token):
     token, _user = test_user_token
     headers = {"Authorization": f"Bearer {token}"}
     docx_content = create_mock_docx("Candidate Resume DOCX text contents")
+
+    mock_parse.return_value = ParsedResumeResponse(
+        resume_id=uuid.uuid4(),
+        status=ResumeStatus.REVIEW_PENDING,
+        full_name="Jane Doe",
+        summary="Summary text",
+        education=[],
+        work_experiences=[],
+        projects=[],
+        skills=[],
+        certifications=[],
+        achievements=[],
+        confidence_score=0.95,
+        parser_provider="gemini",
+        parser_model="gemini-2.5-flash",
+    )
 
     files = {
         "file": (
@@ -123,7 +158,7 @@ async def test_upload_docx_success(client, test_user_token):
 
     data = response.json()
     assert "resume_id" in data
-    assert data["status"] == ResumeStatus.UPLOADED
+    assert data["status"] == ResumeStatus.REVIEW_PENDING
 
     # Verify file exists on disk
     uploaded_files = os.listdir(settings.UPLOAD_DIR)
@@ -279,11 +314,20 @@ async def test_upload_text_extraction_failure(client, test_user_token, db):
         response = await client.post(
             "/api/v1/resume/upload", headers=headers, files=files
         )
-        assert response.status_code == 201
+        assert response.status_code == 400
+        assert "extraction" in response.json()["detail"].lower()
 
-        data = response.json()
-        assert "resume_id" in data
-        assert data["status"] == ResumeStatus.FAILED
+        # Verify database has FAILED record
+        from sqlalchemy import select
+
+        from app.models.resume.resume import Resume
+
+        stmt = select(Resume).filter(
+            Resume.user_id == _user.id, Resume.status == ResumeStatus.FAILED
+        )
+        resume_db = await db.scalar(stmt)
+        assert resume_db is not None
+        assert resume_db.status == ResumeStatus.FAILED
 
         # Clean up files
         uploaded_files = os.listdir(settings.UPLOAD_DIR)

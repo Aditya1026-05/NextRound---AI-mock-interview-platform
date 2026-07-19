@@ -48,9 +48,9 @@ class ParsedEducationResponse(BaseModel):
     institution: str
     degree: str | None = None
     field_of_study: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    gpa: float | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    gpa: float | str | None = None
     confidence: float | None = None
 
 
@@ -63,8 +63,8 @@ class ParsedWorkExperienceResponse(BaseModel):
     role: str
     location: str | None = None
     description: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
+    start_date: str | None = None
+    end_date: str | None = None
     is_current: bool = False
     confidence: float | None = None
 
@@ -77,7 +77,7 @@ class ParsedProjectResponse(BaseModel):
     title: str
     description: str | None = None
     role: str | None = None
-    url: HttpUrl | None = None
+    url: str | None = None
     confidence: float | None = None
 
 
@@ -86,6 +86,8 @@ class ParsedResumeResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    resume_id: uuid.UUID | None = None
+    status: ResumeStatus | None = None
     full_name: str | None = None
     summary: str | None = None
     education: list[ParsedEducationResponse] = Field(default_factory=list)
@@ -94,7 +96,12 @@ class ParsedResumeResponse(BaseModel):
     )
     projects: list[ParsedProjectResponse] = Field(default_factory=list)
     skills: list[ParsedSkillResponse] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    achievements: list[str] = Field(default_factory=list)
     confidence_score: float | None = None
+    parser_provider: str
+    parser_model: str
+    parser_version: str | None = None
 
 
 class ResumeConfirmationRequest(BaseModel):
@@ -107,3 +114,23 @@ class ResumeConfirmationRequest(BaseModel):
     )
     projects: list[ProjectCreateRequest] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    achievements: list[str] = Field(default_factory=list)
+
+
+class ResumeListItem(BaseModel):
+    """Schema representing basic resume metadata in a list view."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    filename: str
+    status: ResumeStatus
+    created_at: str
+    is_primary: bool
+
+
+class RenameResumeRequest(BaseModel):
+    """Schema to rename a resume."""
+
+    filename: str = Field(..., min_length=1, max_length=255)

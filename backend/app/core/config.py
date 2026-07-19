@@ -26,6 +26,19 @@ class Settings(BaseSettings):
     JUDGE0_URL: str = "http://localhost:2358"
     JUDGE0_API_KEY: str | None = None
 
+    # LLM settings
+    LLM_PROVIDER: str = "gemini"
+    LLM_MODEL: str = "gemini/gemini-2.5-flash"
+    LLM_TEMPERATURE: float = 0.0
+    LLM_MAX_TOKENS: int = 4096
+    LLM_TIMEOUT: int = 30
+
+    # LLM API keys
+    GEMINI_API_KEY: str | None = None
+    GROQ_API_KEY: str | None = None
+    MISTRAL_API_KEY: str | None = None
+    OLLAMA_BASE_URL: str | None = None
+
     # Storage
     UPLOAD_DIR: str = "uploads"
 

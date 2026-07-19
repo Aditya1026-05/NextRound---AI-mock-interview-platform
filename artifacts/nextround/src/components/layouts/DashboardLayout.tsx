@@ -101,7 +101,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         animate={{ width: sidebarOpen ? 260 : 72 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-card/60 backdrop-blur-md border-r border-border shrink-0 overflow-hidden md:relative md:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-card/60 backdrop-blur-md border-r border-border shrink-0 overflow-hidden",
           !sidebarOpen && "-translate-x-full md:translate-x-0"
         )}
       >
@@ -222,7 +222,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </motion.aside>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-200",
+        sidebarOpen ? "md:pl-[260px]" : "md:pl-[72px]"
+      )}>
         {/* Header */}
         <header className="h-16 flex items-center justify-between px-4 md:px-8 bg-background/40 backdrop-blur-md border-b border-border sticky top-0 z-40">
           <div className="flex items-center gap-3">

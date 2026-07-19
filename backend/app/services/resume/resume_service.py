@@ -20,6 +20,7 @@ class ResumeService:
         metadata: UploadMetadata,
         raw_text: str | None,
         status: ResumeStatus,
+        parsed_json: dict | None = None,
     ) -> Resume:
         """Create a new Resume database record from upload metadata and parsed text."""
         # Query if this user already has any other resumes
@@ -38,7 +39,7 @@ class ResumeService:
             file_size=metadata.file_size,
             status=status,
             raw_text=raw_text,
-            parsed_json=None,
+            parsed_json=parsed_json,
             is_primary=is_primary,
         )
 

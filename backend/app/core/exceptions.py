@@ -122,3 +122,43 @@ class SkillNotFoundException(HTTPException):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail,
         )
+
+
+class ResumeParsingException(HTTPException):
+    """Exception raised when parsing of resume text fails."""
+
+    def __init__(self, detail: str = "Failed to parse resume"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
+        )
+
+
+class InvalidAIResponseException(HTTPException):
+    """Exception raised when LLM returns invalid response structure."""
+
+    def __init__(self, detail: str = "Invalid AI response format"):
+        super().__init__(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=detail,
+        )
+
+
+class LLMProviderException(HTTPException):
+    """Exception raised when the LLM provider returns an error."""
+
+    def __init__(self, detail: str = "LLM Provider Error"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
+        )
+
+
+class AIProviderUnavailableException(HTTPException):
+    """Exception raised when LLM API service is unavailable or rate limited."""
+
+    def __init__(self, detail: str = "AI Provider is currently unavailable"):
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )
