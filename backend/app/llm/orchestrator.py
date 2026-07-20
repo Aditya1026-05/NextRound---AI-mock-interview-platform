@@ -90,7 +90,18 @@ class LLMOrchestrator:
         overrides: CompletionOverrides | None = None,
     ) -> BaseModel:
         """Call structured completion iterating through logical profile registry fallback chain on transient failures."""
-        errors = []
+        from app.core.observability import (
+            bind_context,
+            provider_fallback,
+            provider_retry,
+            provider_selected,
+            provider_success,
+            provider_trying,
+            providers_all_failed,
+        )
+
+        bind_context(profile=profile)
+        errors = {}
 
         # Resolve the logical profile configuration (raises KeyError if not found)
         profile_cfg = self.registry.get_profile(profile)
@@ -101,6 +112,15 @@ class LLMOrchestrator:
             if fb not in fallback_chain:
                 fallback_chain.append(fb)
 
+        # Log selection mapping metadata
+        primary_cfg = self.registry.get_model(profile_cfg.primary)
+        primary_descr = f"{primary_cfg.provider.capitalize()} ({primary_cfg.model})"
+        fallbacks_descr = []
+        for fb in profile_cfg.fallbacks:
+            fb_cfg = self.registry.get_model(fb)
+            fallbacks_descr.append(f"{fb_cfg.provider.capitalize()} ({fb_cfg.model})")
+        provider_selected(profile, primary_descr, fallbacks_descr)
+
         max_attempts = max(1, profile_cfg.retries + 1)
         retry_delay = profile_cfg.retry_delay
 
@@ -109,6 +129,8 @@ class LLMOrchestrator:
             model_cfg = self.registry.get_model(model_name)
             provider_name = model_cfg.provider
             litellm_model = model_cfg.model
+
+            bind_context(provider=provider_name, model=litellm_model)
 
             # Bind base parameters
             temp = model_cfg.temperature
@@ -127,8 +149,7 @@ class LLMOrchestrator:
             # Attempt completions up to retry limit
             for attempt in range(1, max_attempts + 1):
                 start_time = time.time()
-                logger.info(f"Using provider: {provider_name.capitalize()}")
-                logger.info(f"Attempt {attempt}")
+                provider_trying(provider_name.capitalize(), litellm_model)
                 try:
                     provider = LLMFactory.create_by_name(provider_name)
                     result = await provider.structured_completion(
@@ -141,34 +162,61 @@ class LLMOrchestrator:
                         timeout=timeout_limit,
                     )
                     duration = time.time() - start_time
-                    logger.info(f"{provider_name.capitalize()} succeeded in {duration:.1f}s")
+                    provider_success(provider_name.capitalize(), duration)
+
+                    # Log safe prompt/response metrics
+                    prompt_len = len(system_prompt or "") + len(user_prompt or "")
+                    res_len = len(result.model_dump_json())
+                    logger.info(
+                        "Structured LLM completion call succeeded",
+                        category="LLM",
+                        prompt_length=prompt_len,
+                        response_length=res_len,
+                        latency_seconds=duration,
+                    )
                     return result
                 except Exception as e:
                     duration = time.time() - start_time
-                    logger.error(f"{provider_name.capitalize()} failed in {duration:.1f}s - Error: {e}")
+                    logger.error(
+                        f"{provider_name.capitalize()} call failed in {duration:.2f}s",
+                        category="LLM",
+                        error=str(e),
+                    )
 
                     if _is_transient_error(e):
-                        errors.append(f"{model_name} (attempt {attempt}/{max_attempts}): {e}")
+                        errors[f"{provider_name.capitalize()} ({litellm_model})"] = str(e)
 
                         if attempt < max_attempts:
-                            logger.warn(f"Transient error. Sleeping {retry_delay}s before retry...")
+                            provider_retry(attempt, max_attempts - 1, retry_delay)
                             await asyncio.sleep(retry_delay)
                         else:
-                            # Let's check if there is a next model in the fallback chain to name it in the logs
+                            # Try falling back to next provider in the chain
                             current_index = fallback_chain.index(model_name)
                             if current_index + 1 < len(fallback_chain):
                                 next_model = fallback_chain[current_index + 1]
                                 next_model_cfg = self.registry.get_model(next_model)
-                                logger.warn(
-                                    f"All attempts failed. Falling back to {next_model_cfg.provider.capitalize()}..."
+                                provider_fallback(
+                                    provider_name.capitalize(),
+                                    next_model_cfg.provider.capitalize(),
+                                    str(e),
                                 )
                             else:
-                                logger.warn("All attempts failed. No further fallbacks available.")
+                                logger.warning(
+                                    "All attempts failed. No further fallbacks available.",
+                                    category="LLM",
+                                )
                     else:
-                        logger.error("Non-transient error. Aborting fallback chain.")
+                        logger.error(
+                            "Non-transient error encountered. Aborting fallback chain.",
+                            category="LLM",
+                            error=str(e),
+                        )
                         raise e
 
+        # All fallbacks failed
+        providers_all_failed(errors)
         aggregate_detail = (
-            f"All AI Providers exhausted for profile '{profile}': " + "; ".join(errors)
+            f"All AI Providers exhausted for profile '{profile}': "
+            + "; ".join(f"{p}: {err}" for p, err in errors.items())
         )
         raise AllProvidersUnavailableException(detail=aggregate_detail)

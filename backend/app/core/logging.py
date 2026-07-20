@@ -7,11 +7,15 @@ from app.core.config import settings
 
 
 def setup_logging() -> None:
+    # Resolve log level dynamically
+    log_level_str = settings.LOG_LEVEL.upper()
+    level = getattr(logging, log_level_str, logging.INFO)
+
     # Standard library logging configuration
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=logging.INFO,
+        level=level,
     )
 
     # Suppress verbose library loggers
@@ -29,15 +33,17 @@ def setup_logging() -> None:
         structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
     ]
 
-    # Use ConsoleRenderer for clean, colored logs in development; JSONRenderer for production
-    if settings.ENV == "development":
+    # Use JSONRenderer if LOG_JSON is enabled or in non-development environments by default
+    if settings.LOG_JSON:
+        processors.append(structlog.processors.JSONRenderer())
+    elif settings.ENV == "development":
         processors.append(structlog.dev.ConsoleRenderer(colors=True))
     else:
         processors.append(structlog.processors.JSONRenderer())
 
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(level),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,

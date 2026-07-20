@@ -4,7 +4,7 @@ from app.core.config import settings
 
 # Async SQLAlchemy Engine configuration
 engine = create_async_engine(
-    settings.DATABASE_URL, echo=settings.DEBUG, future=True, pool_pre_ping=True
+    settings.DATABASE_URL, echo=settings.SQL_ECHO, future=True, pool_pre_ping=True
 )
 
 # Async Sessionmaker configuration

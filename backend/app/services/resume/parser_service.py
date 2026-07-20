@@ -1,4 +1,5 @@
 from app.core.config import settings
+from app.core.observability import log_operation
 from app.llm.orchestrator import LLMOrchestrator
 from app.prompts.resume import RESUME_PARSER_SYSTEM_PROMPT
 from app.schemas.resume.ai import ParsedResumeResponse
@@ -10,6 +11,7 @@ class ResumeParserService:
     def __init__(self):
         self.orchestrator = LLMOrchestrator()
 
+    @log_operation(category="SERVICE", name="Resume Parsing")
     async def parse_resume(self, raw_text: str) -> ParsedResumeResponse:
         """Call structured completion through provider and return parsed model."""
         parsed_obj = await self.orchestrator.structured_completion(

@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.observability import bind_context, log_operation
 from app.models.ai.candidate_profile import CandidateProfile
 from app.models.interview.interview_session import InterviewSession
 from app.models.resume.resume import Resume
@@ -27,6 +28,7 @@ class InterviewSessionService:
         self.db = db
         self.blueprint_service = BlueprintService(db)
 
+    @log_operation(category="INTERVIEW", name="Interview Session Creation")
     async def create_session(
         self,
         user_id: uuid.UUID,
@@ -59,14 +61,15 @@ class InterviewSessionService:
                 detail=f"Invalid interview category: {category}",
             )
 
-        logger.info(
-            "Creating interview session",
-            user_id=user_id,
-            resume_id=resume_id,
-            category=category,
-            role=role,
-            duration=duration_minutes,
+        from app.core.observability import (
+            step_completed,
+            step_failed,
+            transaction_committed,
+            transaction_rolled_back,
+            transaction_started,
         )
+
+        bind_context(resume_id=resume_id, user_id=user_id)
 
         # 2. Fetch and validate resume (ownership and status)
         stmt_resume = select(Resume).filter(
@@ -74,16 +77,20 @@ class InterviewSessionService:
         )
         resume = await self.db.scalar(stmt_resume)
         if not resume:
+            step_failed("VALIDATION", "Resume ownership verification", "Resume not found or unauthorized")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Resume not found or access unauthorized",
             )
 
         if resume.status != ResumeStatus.CONFIRMED:
+            step_failed("VALIDATION", "Resume ownership verification", f"Resume status: {resume.status}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Resume confirmation required. Current status: {resume.status}",
             )
+
+        step_completed("VALIDATION", "Resume ownership verified")
 
         # 3. Fetch candidate profile
         stmt_cp = select(CandidateProfile).filter(
@@ -91,10 +98,13 @@ class InterviewSessionService:
         )
         candidate_profile = await self.db.scalar(stmt_cp)
         if not candidate_profile:
+            step_failed("VALIDATION", "Candidate profile verification", "Candidate profile not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Candidate Profile not found. Please confirm the resume again.",
             )
+
+        step_completed("VALIDATION", "Candidate profile located")
 
         # Retrieve summary block from candidate profile JSON
         profile_json = candidate_profile.profile_json or {}
@@ -115,10 +125,14 @@ class InterviewSessionService:
         )
         self.db.add(session)
         await self.db.flush()
+        bind_context(session_id=str(session.id), candidate_profile_id=str(candidate_profile.id))
+        step_completed("INTERVIEW", "Session created")
 
+        transaction_started()
         try:
             # 5. Generate and persist blueprint (handles deleting existing internally)
             await self.blueprint_service.create_blueprint(session, summary)
+            step_completed("INTERVIEW", "Blueprint generated")
 
             # 6. Update session status to READY
             session.status = SessionStatus.READY
@@ -126,16 +140,13 @@ class InterviewSessionService:
 
             # 7. Commit transaction
             await self.db.commit()
+            transaction_committed()
             await self.db.refresh(session, ["blueprint"])
 
-            logger.info(
-                "Interview session initialized and READY",
-                session_id=session.id,
-                status=session.status,
-            )
+            step_completed("INTERVIEW", "Session READY")
             return session
 
         except Exception as e:
-            logger.error("Blueprint generation failed. Rolling back session creation.", error=str(e))
+            transaction_rolled_back(e)
             await self.db.rollback()
             raise e

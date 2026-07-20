@@ -1,5 +1,6 @@
 import structlog
 
+from app.core.observability import log_operation
 from app.llm.orchestrator import LLMOrchestrator
 from app.models.resume.resume import Resume
 from app.prompts.resume import CANDIDATE_PROFILE_SYSTEM_PROMPT
@@ -14,6 +15,7 @@ class CandidateProfileService:
     def __init__(self):
         self.orchestrator = LLMOrchestrator()
 
+    @log_operation(category="SERVICE", name="Candidate Profile Generation")
     async def generate_candidate_profile(
         self, resume: Resume
     ) -> CandidateProfileResponse:

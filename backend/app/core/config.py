@@ -51,5 +51,10 @@ class Settings(BaseSettings):
     JWT_ISSUER: str = "nextround-api"
     JWT_AUDIENCE: str = "nextround-app"
 
+    # Logging Configurations
+    LOG_LEVEL: str = "INFO"
+    LOG_JSON: bool = False
+    SQL_ECHO: bool = False
+
 
 settings = Settings()

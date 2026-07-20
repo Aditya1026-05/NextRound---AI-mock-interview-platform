@@ -79,7 +79,7 @@ class GeminiProvider(LLMProvider):
                 raise ValueError("Empty response content from LLM")
             data = json.loads(content)
             if isinstance(data, dict) and len(data) == 1:
-                root_key = list(data.keys())[0]
+                root_key = next(iter(data))
                 if isinstance(data[root_key], dict) and not any(k in data for k in response_model.model_fields):
                     logger.info("Unwrapping nested LLM response root key", root_key=root_key)
                     data = data[root_key]

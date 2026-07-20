@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.observability import log_operation
 from app.models.ai.candidate_profile import CandidateProfile
 from app.models.resume.education import Education
 from app.models.resume.project import Project
@@ -66,6 +67,7 @@ class ResumeConfirmationService:
         self.db = db
         self.profile_service = CandidateProfileService()
 
+    @log_operation(category="WORKFLOW", name="Resume Confirmation")
     async def confirm_resume(
         self,
         resume_id: uuid.UUID,
@@ -73,17 +75,32 @@ class ResumeConfirmationService:
         request: ResumeConfirmationRequest,
     ) -> Resume:
         """Atomically validate, normalize, switch primary status, generate and upsert AI candidate profile, and finalize."""
+        from app.core.observability import (
+            bind_context,
+            step_completed,
+            step_failed,
+            transaction_committed,
+            transaction_rolled_back,
+            transaction_started,
+        )
+
+        bind_context(resume_id=resume_id, user_id=user_id)
+
         # 1. Fetch resume and check ownership
         stmt = select(Resume).filter(Resume.id == resume_id, Resume.user_id == user_id)
         resume = await self.db.scalar(stmt)
         if not resume:
+            step_failed("VALIDATION", "Ownership verification", "Resume not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Resume not found",
             )
 
+        step_completed("VALIDATION", "Ownership verified")
+
         # 2. Check Idempotency (already CONFIRMED)
         if resume.status == ResumeStatus.CONFIRMED:
+            step_failed("VALIDATION", "Resume confirmation validation", "Resume is already confirmed")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Resume is already confirmed",
@@ -91,14 +108,16 @@ class ResumeConfirmationService:
 
         # 3. Check status is REVIEW_PENDING
         if resume.status != ResumeStatus.REVIEW_PENDING:
+            step_failed("VALIDATION", "Resume confirmation validation", f"Resume status: {resume.status}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Resume confirmation not allowed for status: {resume.status}",
             )
 
+        step_completed("VALIDATION", "Resume validated")
+
         # 4. Perform operations inside savepoint transaction
-        logger.info("Resume confirmation started")
-        logger.info("Normalizing resume")
+        transaction_started()
         try:
             async with self.db.begin_nested():
                 # A. Clean up preexisting child tables linked to this resume
@@ -146,7 +165,6 @@ class ResumeConfirmationService:
                 }
 
                 # C. Insert normalized records
-                logger.info("Saving education")
                 # Education
                 for edu in request.education:
                     edu_db = Education(
@@ -159,6 +177,7 @@ class ResumeConfirmationService:
                         gpa=parse_gpa(edu.gpa),
                     )
                     self.db.add(edu_db)
+                step_completed("SERVICE", "Education normalized")
 
                 # Work experiences
                 for exp in request.work_experiences:
@@ -173,8 +192,8 @@ class ResumeConfirmationService:
                         is_current=exp.is_current,
                     )
                     self.db.add(exp_db)
+                step_completed("SERVICE", "Work Experience normalized")
 
-                logger.info("Saving projects")
                 # Projects
                 for proj in request.projects:
                     proj_db = Project(
@@ -185,8 +204,8 @@ class ResumeConfirmationService:
                         url=str(proj.url) if proj.url else None,
                     )
                     self.db.add(proj_db)
+                step_completed("SERVICE", "Projects normalized")
 
-                logger.info("Saving skills")
                 # Skill Normalization (Trim, Lowercase, Get/Create category, lookup & link)
                 stmt_cat = select(SkillCategory).filter(SkillCategory.name == "General")
                 category = await self.db.scalar(stmt_cat)
@@ -213,6 +232,7 @@ class ResumeConfirmationService:
                     # Bind using ResumeSkill
                     resume_skill = ResumeSkill(resume_id=resume_id, skill_id=skill.id)
                     self.db.add(resume_skill)
+                step_completed("SERVICE", "Skills deduplicated")
 
                 # D. Switch primary status
                 # Unset other primary resumes
@@ -232,10 +252,10 @@ class ResumeConfirmationService:
                 )
 
                 # F. Generate candidate profile
-                logger.info("Generating candidate profile")
                 profile_response = (
                     await self.profile_service.generate_candidate_profile(resume)
                 )
+                step_completed("SERVICE", "Candidate profile generated")
 
                 # G. Upsert Candidate Profile
                 stmt_cp = select(CandidateProfile).filter(
@@ -252,17 +272,17 @@ class ResumeConfirmationService:
                     )
                     self.db.add(cp_rec)
 
-                logger.info("Candidate profile stored")
                 # H. Set status to CONFIRMED
                 resume.status = ResumeStatus.CONFIRMED
 
             # Commit the entire transaction atomically
-            logger.info("Resume confirmed")
             await self.db.commit()
-            logger.info("Transaction committed")
+            transaction_committed()
+            step_completed("SERVICE", "Resume promoted to PRIMARY")
             await self.db.refresh(resume)
             return resume
 
         except Exception as e:
             # We raise the exception, and the active nested transaction will automatically rollback its savepoint
+            transaction_rolled_back(e)
             raise e

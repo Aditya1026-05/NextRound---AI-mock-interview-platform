@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.observability import bind_context, log_operation, step_completed
 from app.llm.orchestrator import LLMOrchestrator
 from app.models.interview.interview_blueprint import InterviewBlueprint
 from app.models.interview.interview_session import InterviewSession
@@ -33,6 +34,7 @@ class BlueprintService:
         self.db = db
         self.orchestrator = LLMOrchestrator()
 
+    @log_operation(category="LLM", name="Blueprint Generation")
     async def create_blueprint(
         self, session: InterviewSession, candidate_profile_summary: str | None
     ) -> InterviewBlueprint:
@@ -55,11 +57,12 @@ class BlueprintService:
             )
 
         logger.info(
-            "Generating interview blueprint",
-            session_id=session.id,
-            category=category,
-            role=role,
-            duration=duration,
+            "Generating Interview Blueprint\n"
+            "Profile: interview_blueprint\n"
+            f"Category: {category.value.capitalize()}\n"
+            f"Role: {role.value.capitalize() if role else 'N/A'}\n"
+            f"Duration: {duration} minutes",
+            category="LLM",
         )
 
         # Call orchestrator
@@ -71,6 +74,7 @@ class BlueprintService:
                 response_model=BlueprintResponseSchema,
             )
         )
+        step_completed("LLM", "Blueprint generated")
 
         # Self-correction: Adjust section durations to match the requested duration exactly
         total_sections_duration = sum(sec.duration for sec in blueprint_obj.sections)
@@ -121,12 +125,8 @@ class BlueprintService:
 
         self.db.add(blueprint_db)
         await self.db.flush()
-
-        logger.info(
-            "Interview blueprint successfully persisted",
-            session_id=session.id,
-            blueprint_id=blueprint_db.id,
-            model=resolved_model,
-        )
+        bind_context(blueprint_id=str(blueprint_db.id))
+        step_completed("DATABASE", "Saving Interview Blueprint")
+        step_completed("LLM", "Interview blueprint successfully persisted")
 
         return blueprint_db
