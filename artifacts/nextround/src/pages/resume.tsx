@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { useUIStore } from '@/store/useUIStore';
 import { useUserStore } from '@/store/useUserStore';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
@@ -99,6 +100,13 @@ export default function ResumeIntelligence() {
   const [resumeTitle, setResumeTitle] = useState("");
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftSavedMessage, setDraftSavedMessage] = useState<string | null>(null);
+
+  const [, setLocation] = useLocation();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmStage, setConfirmStage] = useState(0);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [isConfirmedSuccess, setIsConfirmedSuccess] = useState(false);
 
   // Authenticated fetch wrapper that automatically handles token refreshes on 401
   const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
@@ -513,11 +521,145 @@ export default function ResumeIntelligence() {
     }
   };
 
+  const handleConfirmResume = async () => {
+    if (!parsedData?.resume_id || parsedData.resume_id === 'new') return;
+    
+    setShowConfirmModal(false);
+    setIsConfirming(true);
+    setConfirmStage(0);
+    setConfirmError(null);
+
+    const stageTimer1 = setTimeout(() => setConfirmStage(1), 1000); // Saving Resume
+    const stageTimer2 = setTimeout(() => setConfirmStage(2), 2200); // Preparing Profile
+    const stageTimer3 = setTimeout(() => setConfirmStage(3), 4500); // Finalizing
+
+    try {
+      const response = await fetchWithAuth(`http://localhost:8000/api/v1/resume/${parsedData.resume_id}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(parsedData),
+      });
+
+      clearTimeout(stageTimer1);
+      clearTimeout(stageTimer2);
+      clearTimeout(stageTimer3);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Confirmation request failed.");
+      }
+
+      setConfirmStage(3);
+      setTimeout(() => {
+        setIsConfirming(false);
+        setIsConfirmedSuccess(true);
+      }, 500);
+
+    } catch (err: any) {
+      clearTimeout(stageTimer1);
+      clearTimeout(stageTimer2);
+      clearTimeout(stageTimer3);
+      console.error("Confirmation error:", err);
+      setConfirmError(err.message || "An unexpected error occurred during confirmation.");
+      setIsConfirming(false);
+    }
+  };
+
   if (isLoadingProfile) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <span className="text-xs text-muted-foreground animate-pulse font-medium">Loading candidate profile...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isConfirming) {
+    const CONFIRM_STAGES = [
+      "Validating Resume...",
+      "Saving Resume...",
+      "Preparing Interview Profile...",
+      "Finalizing..."
+    ];
+    return (
+      <DashboardLayout>
+        <div className="max-w-md mx-auto my-16 text-center space-y-6 animate-pulse select-none">
+          <div className="flex justify-center">
+            <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-foreground">Processing Confirmation</h3>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Please wait while we normalize your resume entries and generate candidate intelligence.
+            </p>
+          </div>
+          <div className="max-w-xs mx-auto bg-muted/20 border border-border/60 rounded-xl p-4 text-left space-y-2">
+            {CONFIRM_STAGES.map((stg, idx) => (
+              <div key={idx} className="flex items-center gap-2 text-xs">
+                {confirmStage > idx ? (
+                  <span className="text-emerald-500 font-bold">✓</span>
+                ) : confirmStage === idx ? (
+                  <span className="text-primary animate-spin">⏳</span>
+                ) : (
+                  <span className="text-muted-foreground/30">•</span>
+                )}
+                <span className={confirmStage === idx ? "font-bold text-foreground" : "text-muted-foreground"}>
+                  {stg}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isConfirmedSuccess) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-md mx-auto my-12 animate-fade-in select-none">
+          <Card className="border border-border shadow-md">
+            <CardHeader className="text-center pb-4">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full">
+                  <CheckCircle2 className="h-10 w-10" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-extrabold text-foreground">Resume Confirmed</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-1">
+                Your technical candidate profile has been generated and finalized.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This resume is now set as your primary profile and will be used as the source of truth to customize your future mock interview sessions.
+              </p>
+              
+              <div className="flex flex-col gap-2 pt-2">
+                <Button 
+                  onClick={() => setLocation('/dashboard')}
+                  className="w-full text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  Return to Dashboard
+                </Button>
+                <div className="flex items-center justify-center gap-1.5 pt-1">
+                  <Button 
+                    disabled 
+                    variant="outline" 
+                    className="w-full text-xs font-bold text-muted-foreground cursor-not-allowed opacity-50 flex items-center justify-center gap-1"
+                  >
+                    Start Interview
+                  </Button>
+                  <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 whitespace-nowrap">
+                    Available in Phase 5
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );
@@ -1209,18 +1351,59 @@ export default function ResumeIntelligence() {
                     {isSavingDraft ? "Saving..." : "Save Draft"}
                   </Button>
                   <Button 
-                    disabled 
+                    onClick={() => setShowConfirmModal(true)}
                     size="default" 
-                    className="bg-primary/20 text-muted-foreground cursor-not-allowed text-xs font-bold"
+                    className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold"
                   >
                     Confirm Resume
                   </Button>
                 </div>
-                <span className="text-[9px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-center">
-                  Confirmation will be available in Phase 4.4.
-                </span>
+                {confirmError && (
+                  <span className="text-[10px] text-destructive font-semibold max-w-xs text-center sm:text-right mt-1 animate-pulse">
+                    {confirmError}
+                  </span>
+                )}
               </div>
             </div>
+            
+            {/* Warning Confirmation Modal Overlay */}
+            {showConfirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in select-none">
+                <Card className="max-w-md w-full border border-border shadow-2xl bg-card">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full shrink-0">
+                        <AlertCircle className="h-5 w-5" />
+                      </div>
+                      <CardTitle className="text-base font-extrabold text-foreground">Confirm Resume Profile?</CardTitle>
+                    </div>
+                    <CardDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                      This resume will become your official interview profile and will be used during future interviews.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-0">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Confirming will persist your education, work history, projects, and skills to SQL relations and run Gemini AI to build your permanent Candidate Profile.
+                    </p>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button 
+                        onClick={() => setShowConfirmModal(false)}
+                        variant="outline" 
+                        className="text-xs font-semibold px-4 h-9"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleConfirmResume}
+                        className="text-xs font-bold px-4 h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        Confirm Profile
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         )}
       </div>

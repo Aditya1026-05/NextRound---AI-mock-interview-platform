@@ -1,5 +1,5 @@
 from app.core.config import settings
-from app.llm.factory import LLMFactory
+from app.llm.orchestrator import LLMOrchestrator
 from app.prompts.resume import RESUME_PARSER_SYSTEM_PROMPT
 from app.schemas.resume.ai import ParsedResumeResponse
 
@@ -8,11 +8,11 @@ class ResumeParserService:
     """Orchestrator service for parsing resume raw text using active LLM provider."""
 
     def __init__(self):
-        self.provider = LLMFactory.create()
+        self.orchestrator = LLMOrchestrator()
 
     async def parse_resume(self, raw_text: str) -> ParsedResumeResponse:
         """Call structured completion through provider and return parsed model."""
-        parsed_obj = await self.provider.structured_completion(
+        parsed_obj = await self.orchestrator.structured_completion(
             system_prompt=RESUME_PARSER_SYSTEM_PROMPT,
             user_prompt=raw_text,
             response_model=ParsedResumeResponse,

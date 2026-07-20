@@ -1,25 +1,27 @@
+import uuid
+
 import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_active_user
 from app.core.storage import LocalStorageProvider
 from app.dependencies.providers import get_db
 from app.models.identity.user import User
+from app.models.resume.resume import Resume
 from app.schemas.resume.ai import (
     ParsedResumeResponse,
-    ResumeListItem,
     RenameResumeRequest,
+    ResumeConfirmationRequest,
+    ResumeListItem,
 )
+from app.services.resume.confirmation_service import ResumeConfirmationService
 from app.services.resume.extraction_service import ExtractionService
 from app.services.resume.parser_service import ResumeParserService
 from app.services.resume.resume_service import ResumeService
 from app.services.resume.upload_service import MAX_FILE_SIZE, ResumeUploadService
 from app.shared.enums.resume import ResumeStatus
-
-import uuid
-from sqlalchemy import select
-from app.models.resume.resume import Resume
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -436,3 +438,39 @@ async def upload_resume(
     parsed_obj.status = resume.status
 
     return parsed_obj
+
+
+@router.post(
+    "/{resume_id}/confirm",
+    status_code=status.HTTP_200_OK,
+    summary="Confirm resume details and generate Candidate Profile",
+)
+async def confirm_resume(
+    resume_id: uuid.UUID,
+    request: ResumeConfirmationRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm the candidate's draft resume, normalize it to SQL tables, and run Candidate Profile generation."""
+    logger.info("Initiating resume confirmation process", resume_id=resume_id, user_id=current_user.id)
+    confirmation_service = ResumeConfirmationService(db)
+    
+    try:
+        confirmed_resume = await confirmation_service.confirm_resume(
+            resume_id=resume_id,
+            user_id=current_user.id,
+            request=request,
+        )
+        return {
+            "status": "success",
+            "message": "Resume confirmed and Candidate Profile generated successfully.",
+            "resume_id": confirmed_resume.id,
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error("Resume confirmation failed", error=str(e), resume_id=resume_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Resume confirmation failed: {e!s}",
+        )

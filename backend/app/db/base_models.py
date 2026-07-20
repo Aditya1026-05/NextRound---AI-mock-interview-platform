@@ -1,5 +1,6 @@
 # ruff: noqa: F401
 from app.db.base import Base
+from app.models.ai.candidate_profile import CandidateProfile
 
 # Import all models so Alembic can discover them.
 from app.models.identity import User

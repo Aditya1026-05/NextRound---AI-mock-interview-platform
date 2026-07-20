@@ -12,7 +12,12 @@ class LLMFactory:
     @staticmethod
     def create() -> LLMProvider:
         """Resolve settings LLM provider and return configured instance."""
-        provider_name = (settings.LLM_PROVIDER or "gemini").lower().strip()
+        return LLMFactory.create_by_name(settings.LLM_PROVIDER)
+
+    @staticmethod
+    def create_by_name(provider_name: str) -> LLMProvider:
+        """Instantiate and return specified LLM provider by name."""
+        provider_name = provider_name.lower().strip()
 
         if provider_name == "gemini":
             return GeminiProvider()
@@ -23,4 +28,4 @@ class LLMFactory:
         elif provider_name == "ollama":
             return OllamaProvider()
         else:
-            raise ValueError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
+            raise ValueError(f"Unsupported LLM provider: {provider_name}")

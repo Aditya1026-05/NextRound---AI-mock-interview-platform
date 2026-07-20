@@ -162,3 +162,12 @@ class AIProviderUnavailableException(HTTPException):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=detail,
         )
+
+
+class AllProvidersUnavailableException(AIProviderUnavailableException):
+    """Exception raised when all configured LLM providers fail."""
+
+    def __init__(self, detail: str = "All AI Providers are currently unavailable"):
+        super().__init__(
+            detail=detail,
+        )

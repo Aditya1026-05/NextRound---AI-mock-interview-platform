@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE: float = 0.0
     LLM_MAX_TOKENS: int = 4096
     LLM_TIMEOUT: int = 30
+    LLM_FALLBACK_ORDER: list[str] = ["gemini", "groq", "mistral", "ollama"]
 
     # LLM API keys
     GEMINI_API_KEY: str | None = None

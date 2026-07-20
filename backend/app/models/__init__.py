@@ -1,3 +1,4 @@
+from app.models.ai.candidate_profile import CandidateProfile
 from app.models.identity.user import User
 
 # Interview Domain - completed
@@ -23,6 +24,8 @@ from app.models.resume.skill_category import SkillCategory
 from app.models.resume.work_experience import WorkExperience
 
 __all__ = [
+    # AI Domain
+    "CandidateProfile",
     # Interview Domain
     "Company",
     "Competency",

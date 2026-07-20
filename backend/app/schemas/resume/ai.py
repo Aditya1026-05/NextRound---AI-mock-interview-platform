@@ -1,7 +1,6 @@
 import uuid
-from datetime import date
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.resume.request import (
     EducationCreateRequest,
@@ -113,7 +112,7 @@ class ResumeConfirmationRequest(BaseModel):
         default_factory=list
     )
     projects: list[ProjectCreateRequest] = Field(default_factory=list)
-    skills: list[str] = Field(default_factory=list)
+    skills: list[ParsedSkillResponse] = Field(default_factory=list)
     certifications: list[str] = Field(default_factory=list)
     achievements: list[str] = Field(default_factory=list)
 
@@ -134,3 +133,47 @@ class RenameResumeRequest(BaseModel):
     """Schema to rename a resume."""
 
     filename: str = Field(..., min_length=1, max_length=255)
+
+
+class CandidateProfileResponse(BaseModel):
+    """Schema representing AI-generated reusable candidate profile intelligence."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    summary: str
+    estimated_experience_level: str
+    inferred_years_experience: float
+    recommended_interview_level: str
+    primary_domain: str
+    secondary_domains: list[str] = Field(default_factory=list)
+    detected_programming_languages: list[str] = Field(default_factory=list)
+    detected_technologies: list[str] = Field(default_factory=list)
+    frameworks: list[str] = Field(default_factory=list)
+    databases: list[str] = Field(default_factory=list)
+    cloud_technologies: list[str] = Field(default_factory=list)
+    strengths_inferred_from_projects: list[str] = Field(default_factory=list)
+    major_projects_summary: list[str] = Field(default_factory=list)
+    project_complexity: str
+    resume_presentation_summary: str
+    technology_confidence_scores: dict[str, float] = Field(default_factory=dict)
+    overall_technical_profile: str
+
+    @field_validator(
+        "secondary_domains",
+        "detected_programming_languages",
+        "detected_technologies",
+        "frameworks",
+        "databases",
+        "cloud_technologies",
+        "strengths_inferred_from_projects",
+        "major_projects_summary",
+        mode="before"
+    )
+    @classmethod
+    def coerce_list_fields(cls, v):
+        if isinstance(v, str):
+            if "," in v:
+                return [item.strip() for item in v.split(",") if item.strip()]
+            return [v]
+        return v
+

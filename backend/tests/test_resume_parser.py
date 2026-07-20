@@ -26,7 +26,8 @@ from app.shared.enums.resume import ResumeStatus
 def mock_api_keys():
     """Autouse fixture to mock Gemini API keys for parsing tests."""
     with patch.object(settings, "GEMINI_API_KEY", "mock_key"), \
-         patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"):
+         patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"), \
+         patch.object(settings, "LLM_FALLBACK_ORDER", ["gemini"]):
         yield
 
 
