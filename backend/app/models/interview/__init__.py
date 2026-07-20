@@ -1,5 +1,6 @@
 from app.models.interview.company import Company
 from app.models.interview.competency import Competency
+from app.models.interview.interview_blueprint import InterviewBlueprint
 from app.models.interview.interview_competency_score import InterviewCompetencyScore
 from app.models.interview.interview_event import InterviewEvent
 from app.models.interview.interview_question import InterviewQuestion
@@ -14,6 +15,7 @@ from app.models.interview.role import Role
 __all__ = [
     "Company",
     "Competency",
+    "InterviewBlueprint",
     "InterviewCompetencyScore",
     "InterviewEvent",
     "InterviewQuestion",

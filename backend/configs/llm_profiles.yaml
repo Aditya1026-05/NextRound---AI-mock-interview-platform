@@ -61,3 +61,9 @@ profiles:
     fallbacks: ["groq-llama", "mistral-small"]
     retries: 2
     retry_delay: 1.0
+
+  interview_blueprint:
+    primary: "gemini-flash"
+    fallbacks: ["groq-llama", "mistral-small"]
+    retries: 2
+    retry_delay: 0.5

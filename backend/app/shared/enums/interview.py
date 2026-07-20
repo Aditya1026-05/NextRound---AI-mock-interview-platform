@@ -5,6 +5,24 @@ class DifficultyType(StrEnum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
+    ADAPTIVE = "adaptive"
+
+
+class InterviewCategory(StrEnum):
+    TECHNICAL = "technical"
+    CODING = "coding"
+    BEHAVIORAL = "behavioral"
+    SYSTEM_DESIGN = "system_design"
+
+
+class InterviewRole(StrEnum):
+    BACKEND = "backend"
+    FRONTEND = "frontend"
+    FULLSTACK = "fullstack"
+    AI_ML = "ai_ml"
+    DATA_SCIENCE = "data_science"
+    DEVOPS = "devops"
+    MOBILE = "mobile"
 
 
 class InterviewType(StrEnum):
@@ -16,11 +34,11 @@ class InterviewType(StrEnum):
 
 
 class SessionStatus(StrEnum):
-    IDLE = "idle"
-    IN_PROGRESS = "in_progress"
-    EVALUATING = "evaluating"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    CREATED = "CREATED"
+    READY = "READY"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 
 class EndedReasonType(StrEnum):

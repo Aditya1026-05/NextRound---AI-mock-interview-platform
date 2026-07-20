@@ -7,11 +7,19 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.shared.enums import EndedReasonType, SessionStatus
+from app.shared.enums import (
+    DifficultyType,
+    EndedReasonType,
+    InterviewCategory,
+    InterviewRole,
+    SessionStatus,
+)
 from app.shared.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.ai.candidate_profile import CandidateProfile
     from app.models.identity.user import User
+    from app.models.interview.interview_blueprint import InterviewBlueprint
     from app.models.interview.interview_competency_score import (
         InterviewCompetencyScore,
     )
@@ -46,7 +54,7 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     status: Mapped[SessionStatus] = mapped_column(
         Enum(SessionStatus, native_enum=True),
-        default=SessionStatus.IDLE,
+        default=SessionStatus.CREATED,
         nullable=False,
     )
     ended_reason: Mapped[EndedReasonType | None] = mapped_column(
@@ -61,12 +69,42 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     overall_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Added columns for Phase 5.1
+    candidate_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("candidate_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    interview_category: Mapped[InterviewCategory] = mapped_column(
+        Enum(InterviewCategory, native_enum=False), nullable=False
+    )
+    role: Mapped[InterviewRole | None] = mapped_column(
+        Enum(InterviewRole, native_enum=False), nullable=True
+    )
+    difficulty: Mapped[DifficultyType] = mapped_column(
+        Enum(DifficultyType, native_enum=False),
+        default=DifficultyType.ADAPTIVE,
+        nullable=False,
+    )
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+
     # Relationships
     user: Mapped["User"] = relationship("User", lazy="selectin")
     template: Mapped["InterviewTemplate"] = relationship(
         "InterviewTemplate", lazy="selectin"
     )
     resume: Mapped["Resume"] = relationship("Resume", lazy="selectin")
+    candidate_profile: Mapped["CandidateProfile | None"] = relationship(
+        "CandidateProfile", lazy="selectin"
+    )
+    blueprint: Mapped["InterviewBlueprint | None"] = relationship(
+        "InterviewBlueprint",
+        back_populates="session",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
     questions: Mapped[list["InterviewQuestion"]] = relationship(
         "InterviewQuestion",

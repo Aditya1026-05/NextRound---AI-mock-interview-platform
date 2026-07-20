@@ -7,6 +7,7 @@ from app.models.identity import User
 from app.models.interview import (
     Company,
     Competency,
+    InterviewBlueprint,
     InterviewCompetencyScore,
     InterviewEvent,
     InterviewQuestion,

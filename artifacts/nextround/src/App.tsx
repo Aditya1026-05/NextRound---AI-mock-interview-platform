@@ -9,6 +9,7 @@ import { AppShell } from '@/components/app-shell';
 import Dashboard from '@/pages/dashboard';
 import Interviews from '@/pages/interviews';
 import InterviewNew from '@/pages/interview-new';
+import WaitingRoom from '@/pages/waiting-room';
 import InterviewSession from '@/pages/interview-session';
 import InterviewHistory from '@/pages/interview-history';
 import Coding from '@/pages/coding';
@@ -59,6 +60,7 @@ function ProtectedRouter() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/interviews" component={Interviews} />
       <Route path="/interviews/new" component={InterviewNew} />
+      <Route path="/interviews/waiting-room/:id" component={WaitingRoom} />
       <Route path="/interviews/session/:id" component={InterviewSession} />
       <Route path="/interviews/history" component={InterviewHistory} />
       <Route path="/coding" component={Coding} />

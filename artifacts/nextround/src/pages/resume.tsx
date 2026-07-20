@@ -109,6 +109,10 @@ export default function ResumeIntelligence() {
   const [confirmStage, setConfirmStage] = useState(0);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [isConfirmedSuccess, setIsConfirmedSuccess] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<'technical' | 'coding' | 'behavioral' | 'system_design'>('technical');
+  const [selectedRole, setSelectedRole] = useState<'backend' | 'frontend' | 'fullstack' | 'ai_ml' | 'data_science' | 'devops' | 'mobile'>('backend');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Authenticated fetch wrapper that automatically handles token refreshes on 401
   const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
@@ -576,6 +580,39 @@ export default function ResumeIntelligence() {
     }
   };
 
+  const handleStartInterview = async () => {
+    if (!parsedData?.resume_id) return;
+    setIsGenerating(true);
+    setGenerationError(null);
+
+    try {
+      const response = await fetchWithAuth('http://localhost:8000/api/v1/interview/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume_id: parsedData.resume_id,
+          category: selectedCategory,
+          role: selectedCategory === 'technical' ? selectedRole : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to initialize interview session.");
+      }
+
+      const data = await response.json();
+      setLocation(`/interviews/waiting-room/${data.session_id}`);
+    } catch (err: any) {
+      console.error("Failed to start interview:", err);
+      setGenerationError(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoadingProfile) {
     return (
       <DashboardLayout>
@@ -629,43 +666,103 @@ export default function ResumeIntelligence() {
   if (isConfirmedSuccess) {
     return (
       <DashboardLayout>
-        <div className="max-w-md mx-auto my-12 animate-fade-in select-none">
-          <Card className="border border-border shadow-md">
-            <CardHeader className="text-center pb-4">
+        <div className="max-w-xl mx-auto my-8 animate-fade-in select-none">
+          <Card className="border border-border/60 bg-card/70 backdrop-blur-md shadow-lg rounded-2xl overflow-hidden">
+            <CardHeader className="text-center border-b border-border/40 pb-6 pt-8 bg-muted/10">
               <div className="flex justify-center mb-3">
                 <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full">
-                  <CheckCircle2 className="h-10 w-10" />
+                  <CheckCircle2 className="h-8 w-8 animate-pulse" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-extrabold text-foreground">Resume Confirmed</CardTitle>
+              <CardTitle className="text-2xl font-extrabold text-foreground tracking-tight">Resume Confirmed!</CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-1">
                 Your technical candidate profile has been generated and finalized.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-center">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                This resume is now set as your primary profile and will be used as the source of truth to customize your future mock interview sessions.
-              </p>
-              
-              <div className="flex flex-col gap-2 pt-2">
-                <Button 
+            <CardContent className="p-8 space-y-6">
+              <div className="p-4 bg-emerald-500/[0.03] border border-emerald-500/10 rounded-xl text-left space-y-1">
+                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Intelligence Mapping Complete</h4>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Your profile has been saved as the primary source of truth. You can now customize and launch a tailored AI mock interview.
+                </p>
+              </div>
+
+              {generationError && (
+                <div className="p-4 bg-red-500/5 border border-red-500/15 text-red-500 rounded-xl text-xs text-left flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{generationError}</span>
+                </div>
+              )}
+
+              {/* Configurator Form */}
+              <div className="space-y-4 text-left">
+                <div className="space-y-1.5">
+                  <label htmlFor="category" className="text-xs font-bold text-foreground">
+                    Interview Category
+                  </label>
+                  <select
+                    id="category"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value as any)}
+                    className="w-full h-10 text-xs rounded-lg px-3 border border-border bg-background/50 hover:border-foreground/10 focus:border-primary/50 focus:outline-none transition-colors cursor-pointer"
+                  >
+                    <option value="technical">Technical (Resume & Profile Q&A)</option>
+                    <option value="coding">Coding (Algorithms & Problem Solving)</option>
+                    <option value="behavioral">Behavioral (STAR methodology & HR)</option>
+                    <option value="system_design">System Design (Scalability & Architecture)</option>
+                  </select>
+                </div>
+
+                {selectedCategory === 'technical' && (
+                  <div className="space-y-1.5 animate-fade-in">
+                    <label htmlFor="role" className="text-xs font-bold text-foreground">
+                      Target Role
+                    </label>
+                    <select
+                      id="role"
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value as any)}
+                      className="w-full h-10 text-xs rounded-lg px-3 border border-border bg-background/50 hover:border-foreground/10 focus:border-primary/50 focus:outline-none transition-colors cursor-pointer"
+                    >
+                      <option value="backend">Backend Engineer</option>
+                      <option value="frontend">Frontend Engineer</option>
+                      <option value="fullstack">Fullstack Engineer</option>
+                      <option value="ai_ml">AI / Machine Learning Engineer</option>
+                      <option value="data_science">Data Scientist</option>
+                      <option value="devops">DevOps / Infrastructure Engineer</option>
+                      <option value="mobile">Mobile (iOS / Android) Engineer</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2.5 pt-4 border-t border-border/40">
+                <Button
+                  onClick={handleStartInterview}
+                  disabled={isGenerating}
+                  className="w-full h-11 text-xs font-bold bg-[#4285F4] hover:bg-[#3b77db] text-white transition-all shadow-sm rounded-lg flex items-center justify-center gap-1.5"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Analyzing & Structuring Blueprint...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Start Mock Interview
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  variant="outline"
                   onClick={() => setLocation('/dashboard')}
-                  className="w-full text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground"
+                  disabled={isGenerating}
+                  className="w-full h-10 text-xs font-semibold border-border text-muted-foreground hover:text-foreground"
                 >
                   Return to Dashboard
                 </Button>
-                <div className="flex items-center justify-center gap-1.5 pt-1">
-                  <Button 
-                    disabled 
-                    variant="outline" 
-                    className="w-full text-xs font-bold text-muted-foreground cursor-not-allowed opacity-50 flex items-center justify-center gap-1"
-                  >
-                    Start Interview
-                  </Button>
-                  <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 whitespace-nowrap">
-                    Available in Phase 5
-                  </span>
-                </div>
               </div>
             </CardContent>
           </Card>
