@@ -19,15 +19,22 @@ from app.shared.enums.resume import ResumeStatus
 @pytest.fixture(autouse=True)
 def mock_api_keys():
     """Autouse fixture to mock Gemini API keys."""
-    with patch.object(settings, "GEMINI_API_KEY", "mock_key"), \
-         patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"), \
-         patch.object(settings, "LLM_FALLBACK_ORDER", ["gemini"]):
+    from app.llm.registry import LLMRegistry, ProfileConfig
+
+    mock_profile = ProfileConfig(primary="gemini-flash", fallbacks=[], retries=0)
+    with (
+        patch.object(settings, "GEMINI_API_KEY", "mock_key"),
+        patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"),
+        patch.object(settings, "LLM_FALLBACK_ORDER", ["gemini"]),
+        patch.object(LLMRegistry, "get_profile", return_value=mock_profile),
+    ):
         yield
 
 
 @pytest_asyncio.fixture
 async def client(db):
     """Yield an AsyncClient override for API endpoint tests."""
+
     async def override_get_db():
         yield db
 
@@ -121,7 +128,7 @@ async def test_resume_confirmation_success(client, db, test_user_token):
                 "field_of_study": "Computer Science",
                 "start_date": "2018-09-01",
                 "end_date": "2022-06-01",
-                "gpa": "3.8"
+                "gpa": "3.8",
             }
         ],
         "work_experiences": [
@@ -132,7 +139,7 @@ async def test_resume_confirmation_success(client, db, test_user_token):
                 "description": "Building cloud APIs",
                 "start_date": "2022-07-01",
                 "end_date": None,
-                "is_current": True
+                "is_current": True,
             }
         ],
         "projects": [
@@ -140,17 +147,17 @@ async def test_resume_confirmation_success(client, db, test_user_token):
                 "title": "Project X",
                 "description": "Sleek FastAPI service",
                 "role": "Lead",
-                "url": "https://github.com/projectx"
+                "url": "https://github.com/projectx",
             }
         ],
         "skills": [
             {"name": "Python", "confidence": 1.0},
             {"name": "Docker", "confidence": 0.9},
             {"name": "docker", "confidence": 0.8},
-            {"name": " DOCKER", "confidence": 0.95}
+            {"name": " DOCKER", "confidence": 0.95},
         ],
         "certifications": ["AWS Solutions Architect"],
-        "achievements": ["Hackathon Winner"]
+        "achievements": ["Hackathon Winner"],
     }
 
     mock_litellm = create_mock_completion_response(MOCK_PROFILE_DATA)
@@ -158,9 +165,7 @@ async def test_resume_confirmation_success(client, db, test_user_token):
     with patch("litellm.acompletion", return_value=mock_litellm):
         headers = {"Authorization": f"Bearer {token}"}
         res = await client.post(
-            f"/api/v1/resume/{resume_id}/confirm",
-            json=confirm_request,
-            headers=headers
+            f"/api/v1/resume/{resume_id}/confirm", json=confirm_request, headers=headers
         )
 
         assert res.status_code == 200
@@ -188,14 +193,18 @@ async def test_resume_confirmation_success(client, db, test_user_token):
         # Assert skill deduplication & normalization (lowercase & trim)
         stmt_skills = select(ResumeSkill).filter(ResumeSkill.resume_id == resume_id)
         res_skills = (await db.scalars(stmt_skills)).all()
-        assert len(res_skills) == 2  # "python" and "docker" (duplicates normalized to 'docker')
+        assert (
+            len(res_skills) == 2
+        )  # "python" and "docker" (duplicates normalized to 'docker')
 
         stmt_docker = select(Skill).filter(Skill.name == "docker")
         dock_skills = (await db.scalars(stmt_docker)).all()
         assert len(dock_skills) == 1  # Exactly one unique Skill entry created
 
         # Assert Candidate Profile creation
-        stmt_cp = select(CandidateProfile).filter(CandidateProfile.resume_id == resume_id)
+        stmt_cp = select(CandidateProfile).filter(
+            CandidateProfile.resume_id == resume_id
+        )
         cp = await db.scalar(stmt_cp)
         assert cp is not None
         assert cp.user_id == user.id
@@ -209,6 +218,7 @@ async def test_resume_confirmation_unauthorized(client, db, test_user_token):
 
     # Create another user in the database
     from app.models.identity.user import User
+
     another_user = User(
         email=f"other_user_{uuid.uuid4().hex}@example.com",
         password_hash="pass_hash",
@@ -238,7 +248,7 @@ async def test_resume_confirmation_unauthorized(client, db, test_user_token):
     res = await client.post(
         f"/api/v1/resume/{resume_id}/confirm",
         json={"skills": [{"name": "Python", "confidence": 1.0}]},
-        headers=headers
+        headers=headers,
     )
     assert res.status_code == 404  # Not found due to ownership check mismatch
 
@@ -268,7 +278,7 @@ async def test_resume_confirmation_invalid_status(client, db, test_user_token):
     res = await client.post(
         f"/api/v1/resume/{resume_id}/confirm",
         json={"skills": [{"name": "Python", "confidence": 1.0}]},
-        headers=headers
+        headers=headers,
     )
     assert res.status_code == 400
     assert "not allowed for status" in res.json()["detail"]
@@ -299,7 +309,7 @@ async def test_resume_confirmation_idempotency(client, db, test_user_token):
     res = await client.post(
         f"/api/v1/resume/{resume_id}/confirm",
         json={"skills": [{"name": "Python", "confidence": 1.0}]},
-        headers=headers
+        headers=headers,
     )
     assert res.status_code == 409
     assert "already confirmed" in res.json()["detail"]
@@ -336,18 +346,16 @@ async def test_resume_confirmation_rollback_on_ai_failure(client, db, test_user_
                 "field_of_study": "Computer Science",
                 "start_date": "2018-09-01",
                 "end_date": "2022-06-01",
-                "gpa": "3.8"
+                "gpa": "3.8",
             }
-        ]
+        ],
     }
 
     # Force litellm mock to throw an exception
     with patch("litellm.acompletion", side_effect=Exception("API connection timeout")):
         headers = {"Authorization": f"Bearer {token}"}
         res = await client.post(
-            f"/api/v1/resume/{resume_id}/confirm",
-            json=confirm_request,
-            headers=headers
+            f"/api/v1/resume/{resume_id}/confirm", json=confirm_request, headers=headers
         )
 
         assert res.status_code in (500, 503)
@@ -355,7 +363,9 @@ async def test_resume_confirmation_rollback_on_ai_failure(client, db, test_user_
         # Assert no updates committed (atomicity verification)
         stmt_res = select(Resume).filter(Resume.id == resume_id)
         resume_db = await db.scalar(stmt_res)
-        assert resume_db.status == ResumeStatus.REVIEW_PENDING  # Still pending review, not confirmed!
+        assert (
+            resume_db.status == ResumeStatus.REVIEW_PENDING
+        )  # Still pending review, not confirmed!
         assert resume_db.is_primary is False
 
         # Assert no normalized relations created (rolled back!)
@@ -364,6 +374,8 @@ async def test_resume_confirmation_rollback_on_ai_failure(client, db, test_user_
         assert len(edus) == 0
 
         # Assert no profile record created
-        stmt_cp = select(CandidateProfile).filter(CandidateProfile.resume_id == resume_id)
+        stmt_cp = select(CandidateProfile).filter(
+            CandidateProfile.resume_id == resume_id
+        )
         cp = await db.scalar(stmt_cp)
         assert cp is None

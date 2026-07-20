@@ -315,6 +315,7 @@ async def upload_resume(
 ):
     """Handle candidate resume upload, text extraction, and LLM structured parsing."""
     # 1. Read file content
+    logger.info("Resume upload started")
     content = await file.read()
     filename = file.filename or "resume.pdf"
     content_type = file.content_type or ""
@@ -348,13 +349,12 @@ async def upload_resume(
         )
 
     # 3. Store file through upload service
+    logger.info("Storing file content")
     storage_provider = LocalStorageProvider()
     upload_service = ResumeUploadService(storage_provider=storage_provider)
 
     try:
-        metadata = await upload_service.upload_file(
-            content, filename, content_type
-        )
+        metadata = await upload_service.upload_file(content, filename, content_type)
     except Exception as e:
         logger.error("Failed to store file content", error=str(e))
         raise HTTPException(
@@ -363,6 +363,7 @@ async def upload_resume(
         ) from e
 
     # 4. Attempt text extraction
+    logger.info("Extracting text from file")
     extraction_service = ExtractionService()
     extracted_text = None
     resume_service = ResumeService(db)
@@ -391,6 +392,7 @@ async def upload_resume(
         ) from e
 
     # 5. Attempt LLM Parsing
+    logger.info("Parsing resume using LLM")
     parser_service = ResumeParserService()
     try:
         parsed_obj = await parser_service.parse_resume(extracted_text)
@@ -437,6 +439,7 @@ async def upload_resume(
     parsed_obj.resume_id = resume.id
     parsed_obj.status = resume.status
 
+    logger.info("Resume uploaded successfully")
     return parsed_obj
 
 
@@ -452,9 +455,13 @@ async def confirm_resume(
     db: AsyncSession = Depends(get_db),
 ):
     """Confirm the candidate's draft resume, normalize it to SQL tables, and run Candidate Profile generation."""
-    logger.info("Initiating resume confirmation process", resume_id=resume_id, user_id=current_user.id)
+    logger.info(
+        "Initiating resume confirmation process",
+        resume_id=resume_id,
+        user_id=current_user.id,
+    )
     confirmation_service = ResumeConfirmationService(db)
-    
+
     try:
         confirmed_resume = await confirmation_service.confirm_resume(
             resume_id=resume_id,
@@ -469,8 +476,12 @@ async def confirm_resume(
     except HTTPException as he:
         raise he
     except Exception as e:
-        logger.error("Resume confirmation failed", error=str(e), resume_id=resume_id)
+        logger.error(
+            "Resume confirmation failed",
+            error=str(e),
+            resume_id=resume_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Resume confirmation failed: {e!s}",
-        )
+        ) from e

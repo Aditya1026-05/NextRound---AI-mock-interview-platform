@@ -29,13 +29,9 @@ class InterviewResponse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     response_content: Mapped[str] = mapped_column(Text, nullable=False)
     audio_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    programming_language: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
+    programming_language: Mapped[str | None] = mapped_column(String(50), nullable=True)
     duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
-    transcript_confidence: Mapped[float | None] = mapped_column(
-        Float, nullable=True
-    )
+    transcript_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Relationships
     question: Mapped["InterviewQuestion"] = relationship(

@@ -42,9 +42,7 @@ class InterviewQuestion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     generated_by_ai: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false"), nullable=False
     )
-    generation_metadata: Mapped[dict | None] = mapped_column(
-        JSONB, nullable=True
-    )
+    generation_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     session: Mapped["InterviewSession"] = relationship(

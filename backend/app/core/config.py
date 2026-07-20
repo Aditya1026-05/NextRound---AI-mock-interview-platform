@@ -1,12 +1,9 @@
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
     PROJECT_NAME: str = "NextRound"
@@ -14,7 +11,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nextround"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/nextround"
+    )
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -32,6 +31,7 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE: float = 0.0
     LLM_MAX_TOKENS: int = 4096
     LLM_TIMEOUT: int = 30
+    LLM_PROFILES_PATH: str = "configs/llm_profiles.yaml"
     LLM_FALLBACK_ORDER: list[str] = ["gemini", "groq", "mistral", "ollama"]
 
     # LLM API keys
@@ -50,5 +50,6 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     JWT_ISSUER: str = "nextround-api"
     JWT_AUDIENCE: str = "nextround-app"
+
 
 settings = Settings()

@@ -25,9 +25,15 @@ from app.shared.enums.resume import ResumeStatus
 @pytest.fixture(autouse=True)
 def mock_api_keys():
     """Autouse fixture to mock Gemini API keys for parsing tests."""
-    with patch.object(settings, "GEMINI_API_KEY", "mock_key"), \
-         patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"), \
-         patch.object(settings, "LLM_FALLBACK_ORDER", ["gemini"]):
+    from app.llm.registry import LLMRegistry, ProfileConfig
+
+    mock_profile = ProfileConfig(primary="gemini-flash", fallbacks=[], retries=0)
+    with (
+        patch.object(settings, "GEMINI_API_KEY", "mock_key"),
+        patch.object(settings, "LITELLM_GEMINI_API_KEY", "mock_key"),
+        patch.object(settings, "LLM_FALLBACK_ORDER", ["gemini"]),
+        patch.object(LLMRegistry, "get_profile", return_value=mock_profile),
+    ):
         yield
 
 
@@ -171,9 +177,7 @@ async def test_parser_service_missing_required_fields(mock_acompletion):
     invalid_payload = VALID_PARSED_PAYLOAD.copy()
     invalid_payload.pop("parser_provider")
 
-    mock_acompletion.return_value = create_mock_completion_response(
-        invalid_payload
-    )
+    mock_acompletion.return_value = create_mock_completion_response(invalid_payload)
 
     parser_service = ResumeParserService()
     with pytest.raises(InvalidAIResponseException) as exc:
@@ -236,9 +240,7 @@ async def test_upload_api_success(mock_acompletion, client, test_user_token, db)
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 201
 
     data = response.json()
@@ -288,9 +290,7 @@ async def test_upload_api_parsing_failure(
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 500
     assert "completion request failed" in response.json()["detail"].lower()
 

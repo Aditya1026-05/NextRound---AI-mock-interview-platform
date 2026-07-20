@@ -1,0 +1,63 @@
+# Model Registry: Declares available models and their technical capabilities
+models:
+  gemini-flash:
+    provider: "gemini"
+    model: "gemini/gemini-2.5-flash"
+    temperature: 0.0
+    max_tokens: 4096
+    timeout: 30
+    capabilities:
+      supports_streaming: true
+      supports_json: true
+      supports_function_calling: true
+      max_context_tokens: 1048576
+
+  groq-llama:
+    provider: "groq"
+    model: "groq/llama-3.1-70b-versatile"
+    temperature: 0.2
+    max_tokens: 2048
+    timeout: 15
+    capabilities:
+      supports_streaming: true
+      supports_json: true
+      supports_function_calling: true
+      max_context_tokens: 131072
+
+  mistral-small:
+    provider: "mistral"
+    model: "mistral/mistral-small"
+    temperature: 0.2
+    max_tokens: 2048
+    timeout: 15
+    capabilities:
+      supports_streaming: true
+      supports_json: true
+      supports_function_calling: true
+      max_context_tokens: 32768
+
+  ollama-local:
+    provider: "ollama"
+    model: "ollama/llama3"
+    temperature: 0.2
+    max_tokens: 2048
+    timeout: 30
+    capabilities:
+      supports_streaming: true
+      supports_json: false
+      supports_function_calling: false
+      max_context_tokens: 8192
+
+# Workload Profiles: Maps logical workloads to primary models, fallback chains, and retry policies
+profiles:
+  resume_parser:
+    primary: "gemini-flash"
+    fallbacks: ["groq-llama", "mistral-small"]
+    retries: 2
+    retry_delay: 0.5
+
+  candidate_profile:
+    primary: "gemini-flash"
+    fallbacks: ["groq-llama", "mistral-small"]
+    retries: 2
+    retry_delay: 1.0

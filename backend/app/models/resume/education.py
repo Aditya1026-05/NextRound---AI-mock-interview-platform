@@ -26,9 +26,7 @@ class Education(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     institution: Mapped[str] = mapped_column(String(255), nullable=False)
     degree: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    field_of_study: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
+    field_of_study: Mapped[str | None] = mapped_column(String(255), nullable=True)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     gpa: Mapped[float | None] = mapped_column(Float, nullable=True)

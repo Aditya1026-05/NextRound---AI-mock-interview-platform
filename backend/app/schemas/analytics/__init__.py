@@ -1,2 +1,3 @@
 """Analytics schemas."""
+
 pass

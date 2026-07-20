@@ -13,6 +13,7 @@ class ResumeParserService:
     async def parse_resume(self, raw_text: str) -> ParsedResumeResponse:
         """Call structured completion through provider and return parsed model."""
         parsed_obj = await self.orchestrator.structured_completion(
+            profile="resume_parser",
             system_prompt=RESUME_PARSER_SYSTEM_PROMPT,
             user_prompt=raw_text,
             response_model=ParsedResumeResponse,

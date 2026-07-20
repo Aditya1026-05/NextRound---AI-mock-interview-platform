@@ -15,15 +15,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     email: Mapped[str] = mapped_column(
         String(320), unique=True, index=True, nullable=False
     )
-    password_hash: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
-    full_name: Mapped[str] = mapped_column(
-        String(100), nullable=False
-    )
-    avatar_url: Mapped[str | None] = mapped_column(
-        String(2048), nullable=True
-    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    avatar_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )

@@ -14,9 +14,7 @@ class ExtractionService:
         self, file_content: bytes, mime_type: str, filename: str
     ) -> str:
         """Extract clean text from PDF or DOCX binary stream."""
-        is_pdf = mime_type == "application/pdf" or filename.lower().endswith(
-            ".pdf"
-        )
+        is_pdf = mime_type == "application/pdf" or filename.lower().endswith(".pdf")
         is_docx = mime_type in [
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/msword",

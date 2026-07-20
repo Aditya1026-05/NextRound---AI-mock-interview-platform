@@ -92,6 +92,8 @@ export default function ResumeIntelligence() {
   
   // Parsed Resume data state
   const [parsedData, setParsedData] = useState<ParsedResume | null>(null);
+  const [initialData, setInitialData] = useState<string | null>(null);
+  const isDirty = initialData !== (parsedData ? JSON.stringify(parsedData) : null);
   const [activeTab, setActiveTab] = useState<'experience' | 'education' | 'projects' | 'skills'>('experience');
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -180,6 +182,7 @@ export default function ResumeIntelligence() {
           const data = await response.json();
           if (data && data.resume_id) {
             setParsedData(data);
+            setInitialData(JSON.stringify(data));
             const matched = listData.find((r: any) => r.id === data.resume_id);
             setResumeTitle(matched?.filename || "My Resume Profile");
           }
@@ -219,6 +222,7 @@ export default function ResumeIntelligence() {
         setTimeout(async () => {
           setIsUploading(false);
           setParsedData(data);
+          setInitialData(JSON.stringify(data));
           setResumeTitle(data.original_filename || "My Resume Profile");
           if (stageInterval.current) clearInterval(stageInterval.current);
 
@@ -416,6 +420,7 @@ export default function ResumeIntelligence() {
       if (res.ok) {
         const data = await res.json();
         setParsedData(data);
+        setInitialData(JSON.stringify(data));
         setResumeTitle(data.original_filename || "New Manual Profile");
         
         // Re-fetch resumes list
@@ -446,6 +451,8 @@ export default function ResumeIntelligence() {
       if (res.ok) {
         const data = await res.json();
         setParsedData(data);
+        setInitialData(JSON.stringify(data));
+        setConfirmError(null);
         setDraftSavedMessage("Draft saved successfully!");
         setTimeout(() => setDraftSavedMessage(null), 3000);
       } else {
@@ -471,6 +478,7 @@ export default function ResumeIntelligence() {
       if (res.ok) {
         const data = await res.json();
         setParsedData(data);
+        setInitialData(JSON.stringify(data));
         const matched = resumesList.find(r => r.id === resumeId);
         setResumeTitle(matched?.filename || "My Resume Profile");
       }
@@ -511,6 +519,7 @@ export default function ResumeIntelligence() {
       });
       if (res.ok) {
         setParsedData(null);
+        setInitialData(null);
         setFileName(null);
         setResumeTitle("");
         // Update resumes list cache
@@ -848,6 +857,7 @@ export default function ResumeIntelligence() {
                     <Button 
                       onClick={() => {
                         setParsedData(null);
+                        setInitialData(null);
                         setFileName(null);
                         setResumeTitle("");
                       }}
@@ -1351,7 +1361,14 @@ export default function ResumeIntelligence() {
                     {isSavingDraft ? "Saving..." : "Save Draft"}
                   </Button>
                   <Button 
-                    onClick={() => setShowConfirmModal(true)}
+                    onClick={() => {
+                      if (isDirty) {
+                        setConfirmError("Please save your draft first.");
+                        return;
+                      }
+                      setConfirmError(null);
+                      setShowConfirmModal(true);
+                    }}
                     size="default" 
                     className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold"
                   >

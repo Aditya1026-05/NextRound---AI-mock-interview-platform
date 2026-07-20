@@ -33,9 +33,7 @@ def _create_token(
         expire = now + expires_delta
     else:
         if token_type == TokenType.ACCESS:
-            expire = now + timedelta(
-                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-            )
+            expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         else:
             expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -48,9 +46,7 @@ def _create_token(
         "aud": settings.JWT_AUDIENCE,
     }
 
-    return jwt.encode(
-        payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_access_token(

@@ -16,9 +16,7 @@ from app.models.identity.user import User
 
 # Configure scheme with auto_error=False to allow custom error handling
 # and support optional authentication dependencies.
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login", auto_error=False
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 async def get_current_user(

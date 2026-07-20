@@ -59,9 +59,7 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     overall_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    total_duration_seconds: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    total_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", lazy="selectin")

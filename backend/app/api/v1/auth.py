@@ -22,9 +22,7 @@ router = APIRouter()
     summary="Register a new user",
     description="Create a candidate account and return JWT credentials.",
 )
-async def register(
-    schema: UserRegisterRequest, db: AsyncSession = Depends(get_db)
-):
+async def register(schema: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
     """Handle candidate registration."""
     service = AuthService(db)
     return await service.register_user(schema)
@@ -55,9 +53,7 @@ async def login(
     summary="Refresh access token",
     description="Generate a new set of JWT credentials using a valid refresh token.",
 )
-async def refresh(
-    schema: RefreshTokenRequest, db: AsyncSession = Depends(get_db)
-):
+async def refresh(schema: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     """Handle access token renewal."""
     service = AuthService(db)
     return await service.refresh_access_token(schema)

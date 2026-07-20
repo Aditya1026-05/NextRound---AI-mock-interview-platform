@@ -110,4 +110,3 @@ Evaluation Guidelines:
 
 You must return a valid JSON object matching this schema. Do not wrap the JSON output inside Markdown code blocks. Output raw valid JSON only.
 """
-

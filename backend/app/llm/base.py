@@ -13,6 +13,10 @@ class LLMProvider(ABC):
         system_prompt: str,
         user_prompt: str,
         response_model: type[BaseModel],
+        model_name: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        timeout: int | None = None,
     ) -> BaseModel:
-        """Call LLM and parse output into a validated Pydantic model."""
+        """Call LLM and parse output into a validated Pydantic model with optional overrides."""
         pass

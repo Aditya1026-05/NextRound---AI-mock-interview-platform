@@ -14,7 +14,9 @@ class CandidateProfileService:
     def __init__(self):
         self.orchestrator = LLMOrchestrator()
 
-    async def generate_candidate_profile(self, resume: Resume) -> CandidateProfileResponse:
+    async def generate_candidate_profile(
+        self, resume: Resume
+    ) -> CandidateProfileResponse:
         """Analyze a normalized Resume ORM object and generate the CandidateProfileResponse."""
         # Format the normalized details into text representation
         edu_details = []
@@ -61,6 +63,7 @@ class CandidateProfileService:
         logger.info("Generating candidate profile with LLM", resume_id=resume.id)
 
         profile_obj = await self.orchestrator.structured_completion(
+            profile="candidate_profile",
             system_prompt=CANDIDATE_PROFILE_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             response_model=CandidateProfileResponse,

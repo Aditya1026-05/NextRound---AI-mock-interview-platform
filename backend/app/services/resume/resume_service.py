@@ -24,8 +24,8 @@ class ResumeService:
     ) -> Resume:
         """Create a new Resume database record from upload metadata and parsed text."""
         # Query if this user already has any other resumes
-        stmt = select(func.count()).select_from(Resume).filter(
-            Resume.user_id == user_id
+        stmt = (
+            select(func.count()).select_from(Resume).filter(Resume.user_id == user_id)
         )
         existing_count = await self.db.scalar(stmt) or 0
         is_primary = existing_count == 0

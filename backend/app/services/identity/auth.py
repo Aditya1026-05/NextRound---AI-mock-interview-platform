@@ -87,9 +87,7 @@ class AuthService:
             refresh_token=refresh_token,
         )
 
-    async def refresh_access_token(
-        self, schema: RefreshTokenRequest
-    ) -> TokenResponse:
+    async def refresh_access_token(self, schema: RefreshTokenRequest) -> TokenResponse:
         """Verify refresh token integrity and return a new token pair."""
         user_id_str = verify_refresh_token(schema.refresh_token)
         try:

@@ -2,6 +2,7 @@ import re
 import uuid
 from datetime import date, datetime
 
+import structlog
 from fastapi import HTTPException, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,13 +19,15 @@ from app.schemas.resume.ai import ResumeConfirmationRequest
 from app.services.resume.profile_service import CandidateProfileService
 from app.shared.enums.resume import ResumeStatus
 
+logger = structlog.get_logger()
+
 
 def parse_date(date_str: str | None) -> date | None:
     if not date_str:
         return None
     if isinstance(date_str, date):
         return date_str
-    
+
     cleaned = str(date_str).strip()
     if not cleaned or cleaned.lower() in ("present", "current", "none", "null"):
         return None
@@ -35,7 +38,7 @@ def parse_date(date_str: str | None) -> date | None:
             return datetime.strptime(cleaned, fmt).date()
         except ValueError:
             continue
-    
+
     # MM/YYYY
     match = re.search(r"(\d{1,2})/(\d{4})", cleaned)
     if match:
@@ -43,8 +46,9 @@ def parse_date(date_str: str | None) -> date | None:
             return date(int(match.group(2)), int(match.group(1)), 1)
         except ValueError:
             pass
-            
+
     return None
+
 
 def parse_gpa(gpa_val) -> float | None:
     if gpa_val is None or gpa_val == "":
@@ -70,9 +74,7 @@ class ResumeConfirmationService:
     ) -> Resume:
         """Atomically validate, normalize, switch primary status, generate and upsert AI candidate profile, and finalize."""
         # 1. Fetch resume and check ownership
-        stmt = select(Resume).filter(
-            Resume.id == resume_id, Resume.user_id == user_id
-        )
+        stmt = select(Resume).filter(Resume.id == resume_id, Resume.user_id == user_id)
         resume = await self.db.scalar(stmt)
         if not resume:
             raise HTTPException(
@@ -95,19 +97,31 @@ class ResumeConfirmationService:
             )
 
         # 4. Perform operations inside savepoint transaction
+        logger.info("Resume confirmation started")
+        logger.info("Normalizing resume")
         try:
             async with self.db.begin_nested():
                 # A. Clean up preexisting child tables linked to this resume
-                await self.db.execute(delete(Education).where(Education.resume_id == resume_id))
-                await self.db.execute(delete(WorkExperience).where(WorkExperience.resume_id == resume_id))
-                await self.db.execute(delete(Project).where(Project.resume_id == resume_id))
-                await self.db.execute(delete(ResumeSkill).where(ResumeSkill.resume_id == resume_id))
+                await self.db.execute(
+                    delete(Education).where(Education.resume_id == resume_id)
+                )
+                await self.db.execute(
+                    delete(WorkExperience).where(WorkExperience.resume_id == resume_id)
+                )
+                await self.db.execute(
+                    delete(Project).where(Project.resume_id == resume_id)
+                )
+                await self.db.execute(
+                    delete(ResumeSkill).where(ResumeSkill.resume_id == resume_id)
+                )
                 await self.db.flush()
 
                 # B. Save updated parsed_json as a snapshot
                 dumped_req = request.model_dump(mode="json")
                 resume.parsed_json = {
-                    "full_name": resume.parsed_json.get("full_name", "") if resume.parsed_json else "",
+                    "full_name": resume.parsed_json.get("full_name", "")
+                    if resume.parsed_json
+                    else "",
                     "summary": request.summary,
                     "education": dumped_req.get("education", []),
                     "work_experiences": dumped_req.get("work_experiences", []),
@@ -115,13 +129,24 @@ class ResumeConfirmationService:
                     "skills": dumped_req.get("skills", []),
                     "certifications": request.certifications,
                     "achievements": request.achievements,
-                    "confidence_score": resume.parsed_json.get("confidence_score", 1.0) if resume.parsed_json else 1.0,
-                    "parser_provider": resume.parsed_json.get("parser_provider", "manual") if resume.parsed_json else "manual",
-                    "parser_model": resume.parsed_json.get("parser_model", "manual") if resume.parsed_json else "manual",
-                    "parser_version": resume.parsed_json.get("parser_version", "1.0") if resume.parsed_json else "1.0",
+                    "confidence_score": resume.parsed_json.get("confidence_score", 1.0)
+                    if resume.parsed_json
+                    else 1.0,
+                    "parser_provider": resume.parsed_json.get(
+                        "parser_provider", "manual"
+                    )
+                    if resume.parsed_json
+                    else "manual",
+                    "parser_model": resume.parsed_json.get("parser_model", "manual")
+                    if resume.parsed_json
+                    else "manual",
+                    "parser_version": resume.parsed_json.get("parser_version", "1.0")
+                    if resume.parsed_json
+                    else "1.0",
                 }
 
                 # C. Insert normalized records
+                logger.info("Saving education")
                 # Education
                 for edu in request.education:
                     edu_db = Education(
@@ -149,6 +174,7 @@ class ResumeConfirmationService:
                     )
                     self.db.add(exp_db)
 
+                logger.info("Saving projects")
                 # Projects
                 for proj in request.projects:
                     proj_db = Project(
@@ -160,6 +186,7 @@ class ResumeConfirmationService:
                     )
                     self.db.add(proj_db)
 
+                logger.info("Saving skills")
                 # Skill Normalization (Trim, Lowercase, Get/Create category, lookup & link)
                 stmt_cat = select(SkillCategory).filter(SkillCategory.name == "General")
                 category = await self.db.scalar(stmt_cat)
@@ -184,10 +211,7 @@ class ResumeConfirmationService:
                         await self.db.flush()
 
                     # Bind using ResumeSkill
-                    resume_skill = ResumeSkill(
-                        resume_id=resume_id,
-                        skill_id=skill.id
-                    )
+                    resume_skill = ResumeSkill(resume_id=resume_id, skill_id=skill.id)
                     self.db.add(resume_skill)
 
                 # D. Switch primary status
@@ -203,13 +227,20 @@ class ResumeConfirmationService:
                 await self.db.flush()
 
                 # E. Eager load relation tables
-                await self.db.refresh(resume, ["education", "work_experiences", "projects", "skills"])
+                await self.db.refresh(
+                    resume, ["education", "work_experiences", "projects", "skills"]
+                )
 
                 # F. Generate candidate profile
-                profile_response = await self.profile_service.generate_candidate_profile(resume)
+                logger.info("Generating candidate profile")
+                profile_response = (
+                    await self.profile_service.generate_candidate_profile(resume)
+                )
 
                 # G. Upsert Candidate Profile
-                stmt_cp = select(CandidateProfile).filter(CandidateProfile.resume_id == resume_id)
+                stmt_cp = select(CandidateProfile).filter(
+                    CandidateProfile.resume_id == resume_id
+                )
                 cp_rec = await self.db.scalar(stmt_cp)
                 if cp_rec:
                     cp_rec.profile_json = profile_response.model_dump()
@@ -221,11 +252,14 @@ class ResumeConfirmationService:
                     )
                     self.db.add(cp_rec)
 
+                logger.info("Candidate profile stored")
                 # H. Set status to CONFIRMED
                 resume.status = ResumeStatus.CONFIRMED
 
             # Commit the entire transaction atomically
+            logger.info("Resume confirmed")
             await self.db.commit()
+            logger.info("Transaction committed")
             await self.db.refresh(resume)
             return resume
 

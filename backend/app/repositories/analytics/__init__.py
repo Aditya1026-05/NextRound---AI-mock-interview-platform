@@ -1,2 +1,3 @@
 """Analytics repositories."""
+
 pass

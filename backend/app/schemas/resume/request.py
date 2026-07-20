@@ -7,9 +7,7 @@ from pydantic import BaseModel, Field, HttpUrl
 class ResumeCreateRequest(BaseModel):
     """Schema for creating a new resume."""
 
-    file_url: HttpUrl = Field(
-        ..., description="The URL of the uploaded resume file"
-    )
+    file_url: HttpUrl = Field(..., description="The URL of the uploaded resume file")
     raw_text: str | None = Field(
         None, description="The raw parsed text content of the resume"
     )
@@ -94,9 +92,7 @@ class WorkExperienceCreateRequest(BaseModel):
     location: str | None = Field(
         None, max_length=255, description="Office location or remote"
     )
-    description: str | None = Field(
-        None, description="Job details and achievements"
-    )
+    description: str | None = Field(None, description="Job details and achievements")
     start_date: date | None = Field(None, description="Employment start date")
     end_date: date | None = Field(None, description="Employment end date")
     is_current: bool = Field(
@@ -119,9 +115,7 @@ class WorkExperienceUpdateRequest(BaseModel):
     location: str | None = Field(
         None, max_length=255, description="Office location or remote"
     )
-    description: str | None = Field(
-        None, description="Job details and achievements"
-    )
+    description: str | None = Field(None, description="Job details and achievements")
     start_date: date | None = Field(None, description="Employment start date")
     end_date: date | None = Field(None, description="Employment end date")
     is_current: bool | None = Field(

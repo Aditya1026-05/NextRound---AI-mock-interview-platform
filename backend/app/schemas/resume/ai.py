@@ -90,9 +90,7 @@ class ParsedResumeResponse(BaseModel):
     full_name: str | None = None
     summary: str | None = None
     education: list[ParsedEducationResponse] = Field(default_factory=list)
-    work_experiences: list[ParsedWorkExperienceResponse] = Field(
-        default_factory=list
-    )
+    work_experiences: list[ParsedWorkExperienceResponse] = Field(default_factory=list)
     projects: list[ParsedProjectResponse] = Field(default_factory=list)
     skills: list[ParsedSkillResponse] = Field(default_factory=list)
     certifications: list[str] = Field(default_factory=list)
@@ -108,9 +106,7 @@ class ResumeConfirmationRequest(BaseModel):
 
     summary: str | None = None
     education: list[EducationCreateRequest] = Field(default_factory=list)
-    work_experiences: list[WorkExperienceCreateRequest] = Field(
-        default_factory=list
-    )
+    work_experiences: list[WorkExperienceCreateRequest] = Field(default_factory=list)
     projects: list[ProjectCreateRequest] = Field(default_factory=list)
     skills: list[ParsedSkillResponse] = Field(default_factory=list)
     certifications: list[str] = Field(default_factory=list)
@@ -167,7 +163,7 @@ class CandidateProfileResponse(BaseModel):
         "cloud_technologies",
         "strengths_inferred_from_projects",
         "major_projects_summary",
-        mode="before"
+        mode="before",
     )
     @classmethod
     def coerce_list_fields(cls, v):
@@ -176,4 +172,3 @@ class CandidateProfileResponse(BaseModel):
                 return [item.strip() for item in v.split(",") if item.strip()]
             return [v]
         return v
-

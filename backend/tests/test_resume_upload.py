@@ -101,9 +101,7 @@ async def test_upload_pdf_success(mock_parse, client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 201
 
     data = response.json()
@@ -151,9 +149,7 @@ async def test_upload_docx_success(mock_parse, client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 201
 
     data = response.json()
@@ -182,9 +178,7 @@ async def test_upload_invalid_extension(client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 400
     assert "extension" in response.json()["detail"].lower()
 
@@ -203,9 +197,7 @@ async def test_upload_invalid_mime_type(client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 400
     assert "mime" in response.json()["detail"].lower()
 
@@ -224,9 +216,7 @@ async def test_upload_oversized_file(client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 400
     assert "size" in response.json()["detail"].lower()
 
@@ -244,9 +234,7 @@ async def test_upload_empty_file(client, test_user_token):
         )
     }
 
-    response = await client.post(
-        "/api/v1/resume/upload", headers=headers, files=files
-    )
+    response = await client.post("/api/v1/resume/upload", headers=headers, files=files)
     assert response.status_code == 400
     assert "empty" in response.json()["detail"].lower()
 

@@ -2,6 +2,7 @@ import logging
 import sys
 
 import structlog
+
 from app.core.config import settings
 
 
@@ -12,6 +13,12 @@ def setup_logging() -> None:
         stream=sys.stdout,
         level=logging.INFO,
     )
+
+    # Suppress verbose library loggers
+    logging.getLogger("litellm").setLevel(logging.WARNING)
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     # Structlog configuration
     processors = [

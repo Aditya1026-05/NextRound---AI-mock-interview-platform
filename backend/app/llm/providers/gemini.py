@@ -31,23 +31,30 @@ class GeminiProvider(LLMProvider):
         system_prompt: str,
         user_prompt: str,
         response_model: type[BaseModel],
+        model_name: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        timeout: int | None = None,
     ) -> BaseModel:
         if not self.api_key:
             logger.error("Gemini API key is not configured")
-            raise AIProviderUnavailableException(
-                detail="Gemini API key is missing"
-            )
+            raise AIProviderUnavailableException(detail="Gemini API key is missing")
+
+        target_model = model_name or settings.LLM_MODEL
+        target_temp = settings.LLM_TEMPERATURE if temperature is None else temperature
+        target_tokens = settings.LLM_MAX_TOKENS if max_tokens is None else max_tokens
+        target_timeout = settings.LLM_TIMEOUT if timeout is None else timeout
 
         try:
             response = await litellm.acompletion(
-                model=settings.LLM_MODEL,
+                model=target_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=settings.LLM_TEMPERATURE,
-                max_tokens=settings.LLM_MAX_TOKENS,
-                timeout=settings.LLM_TIMEOUT,
+                temperature=target_temp,
+                max_tokens=target_tokens,
+                timeout=target_timeout,
                 response_format={"type": "json_object"},
             )
         except litellm.exceptions.APIConnectionError as e:
@@ -78,9 +85,7 @@ class GeminiProvider(LLMProvider):
                 detail="LLM output is not valid JSON"
             ) from e
         except Exception as e:
-            logger.error(
-                "Parsed response model validation failed", error=str(e)
-            )
+            logger.error("Parsed response model validation failed", error=str(e))
             raise InvalidAIResponseException(
                 detail=f"Pydantic model validation failed: {e!s}"
             ) from e

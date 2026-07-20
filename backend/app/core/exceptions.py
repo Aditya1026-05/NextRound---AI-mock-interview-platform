@@ -12,9 +12,7 @@ class AuthenticationException(HTTPException):
     ):
         if headers is None:
             headers = {"WWW-Authenticate": "Bearer"}
-        super().__init__(
-            status_code=status_code, detail=detail, headers=headers
-        )
+        super().__init__(status_code=status_code, detail=detail, headers=headers)
 
 
 class InvalidCredentialsException(AuthenticationException):
