@@ -54,3 +54,18 @@ class ResponseType(StrEnum):
     VOICE = "voice"
     TEXT = "text"
     CODE = "code"
+
+
+class InterviewState(StrEnum):
+    READY = "READY"
+    GREETING = "GREETING"
+    INTRODUCTION = "INTRODUCTION"
+    IN_PROGRESS = "IN_PROGRESS"
+    CLOSING = "CLOSING"
+    COMPLETED = "COMPLETED"
+
+
+class InterviewMessageRole(StrEnum):
+    SYSTEM = "SYSTEM"
+    INTERVIEWER = "INTERVIEWER"
+    CANDIDATE = "CANDIDATE"

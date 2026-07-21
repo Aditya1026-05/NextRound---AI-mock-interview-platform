@@ -41,8 +41,22 @@ def _is_transient_error(e: Exception) -> bool:
     if isinstance(e, AIProviderUnavailableException):
         return True
 
-    # 4. Check strings/substrings of the error message for safety (e.g. 503, 429, timeout)
     err_str = str(cause).lower()
+
+    # 4. Treat decommissioned/deprecated model errors as provider-level failures
+    #    so the fallback chain continues to the next provider
+    decommission_keywords = [
+        "model_decommissioned",
+        "decommissioned",
+        "deprecated",
+        "model not found",
+        "model_not_found",
+        "no such model",
+    ]
+    if any(kw in err_str for kw in decommission_keywords):
+        return True
+
+    # 5. Check strings/substrings of the error message for safety (e.g. 503, 429, timeout)
     transient_keywords = [
         "503",
         "429",
@@ -72,6 +86,7 @@ def _is_transient_error(e: Exception) -> bool:
             return True
 
     return False
+
 
 
 class LLMOrchestrator:

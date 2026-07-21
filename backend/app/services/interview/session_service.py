@@ -39,7 +39,7 @@ class InterviewSessionService:
         """Atomically validate resume, category/role options, initialize CREATED session, generate blueprint, and transition to READY."""
         # 1. Resolve default category durations
         if category == InterviewCategory.TECHNICAL:
-            duration_minutes = 45
+            duration_minutes = 60
             # Validate role exists for technical category
             if not role:
                 raise HTTPException(

@@ -12,6 +12,7 @@ from app.shared.enums import (
     EndedReasonType,
     InterviewCategory,
     InterviewRole,
+    InterviewState,
     SessionStatus,
 )
 from app.shared.mixins import TimestampMixin, UUIDPrimaryKeyMixin
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
         InterviewCompetencyScore,
     )
     from app.models.interview.interview_event import InterviewEvent
+    from app.models.interview.interview_message import InterviewMessage
     from app.models.interview.interview_question import InterviewQuestion
     from app.models.interview.interview_template import InterviewTemplate
     from app.models.resume.resume import Resume
@@ -88,6 +90,14 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
     )
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    interview_state: Mapped[InterviewState] = mapped_column(
+        Enum(InterviewState, native_enum=False),
+        default=InterviewState.READY,
+        nullable=False,
+    )
+    current_section_index: Mapped[int | None] = mapped_column(
+        Integer, default=0, nullable=True
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", lazy="selectin")
@@ -97,6 +107,13 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     resume: Mapped["Resume"] = relationship("Resume", lazy="selectin")
     candidate_profile: Mapped["CandidateProfile | None"] = relationship(
         "CandidateProfile", lazy="selectin"
+    )
+    messages: Mapped[list["InterviewMessage"]] = relationship(
+        "InterviewMessage",
+        back_populates="session",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        order_by="InterviewMessage.sequence_number",
     )
     blueprint: Mapped["InterviewBlueprint | None"] = relationship(
         "InterviewBlueprint",

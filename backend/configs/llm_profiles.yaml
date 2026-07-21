@@ -14,7 +14,7 @@ models:
 
   groq-llama:
     provider: "groq"
-    model: "groq/llama-3.1-70b-versatile"
+    model: "groq/llama-3.3-70b-versatile"
     temperature: 0.2
     max_tokens: 2048
     timeout: 15
@@ -23,6 +23,18 @@ models:
       supports_json: true
       supports_function_calling: true
       max_context_tokens: 131072
+
+  groq-llama-instant:
+    provider: "groq"
+    model: "groq/llama3-8b-8192"
+    temperature: 0.2
+    max_tokens: 2048
+    timeout: 15
+    capabilities:
+      supports_streaming: true
+      supports_json: true
+      supports_function_calling: false
+      max_context_tokens: 8192
 
   mistral-small:
     provider: "mistral"
@@ -48,6 +60,7 @@ models:
       supports_function_calling: false
       max_context_tokens: 8192
 
+
 # Workload Profiles: Maps logical workloads to primary models, fallback chains, and retry policies
 profiles:
   resume_parser:
@@ -65,5 +78,11 @@ profiles:
   interview_blueprint:
     primary: "gemini-flash"
     fallbacks: ["groq-llama", "mistral-small"]
+    retries: 2
+    retry_delay: 0.5
+
+  interview_conversation:
+    primary: "gemini-flash"
+    fallbacks: ["groq-llama", "groq-llama-instant", "mistral-small"]
     retries: 2
     retry_delay: 0.5

@@ -235,15 +235,12 @@ export default function WaitingRoom() {
 
                   <div className="pt-2 border-t border-border/40">
                     <Button
-                      disabled
-                      className="w-full text-xs font-bold bg-[#4285F4] hover:bg-[#3b77db] text-white py-5 rounded-xl cursor-not-allowed opacity-50 flex items-center justify-center gap-1.5"
+                      onClick={() => setLocation(`/interviews/session/${session?.id}`)}
+                      className="w-full text-xs font-bold bg-[#4285F4] hover:bg-[#3b77db] text-white py-5 rounded-xl flex items-center justify-center gap-1.5"
                     >
                       <PlayCircle className="h-4.5 w-4.5" />
                       Start Mock Interview
                     </Button>
-                    <span className="block text-center text-[9px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/20 py-1.5 rounded-lg mt-2">
-                      Waiting Room Active — Live interview execution unlocks in Phase 5.2
-                    </span>
                   </div>
                 </CardContent>
               </Card>

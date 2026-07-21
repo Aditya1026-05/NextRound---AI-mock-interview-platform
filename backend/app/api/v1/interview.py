@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -123,3 +124,186 @@ async def get_session_detail(
         resume_filename=resume_name,
         blueprint_title=blueprint_title,
     )
+
+
+# New schemas for conversational flow
+
+
+class InterviewStartResponse(BaseModel):
+    message: str
+    interview_state: str
+    session_status: SessionStatus
+
+
+class InterviewRespondRequest(BaseModel):
+    message: str
+
+
+class InterviewRespondResponse(BaseModel):
+    message: str
+    interview_state: str
+    session_status: SessionStatus
+
+
+class MessageResponseSchema(BaseModel):
+    id: uuid.UUID
+    role: str
+    content: str
+    sequence_number: int
+    created_at: datetime
+
+
+@router.post(
+    "/session/{session_id}/start",
+    response_model=InterviewStartResponse,
+    summary="Start the interview session and get the interviewer's greeting",
+)
+async def start_interview(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Validate ownership, status, and generate first greeting."""
+    stmt = select(InterviewSession).filter(
+        InterviewSession.id == session_id, InterviewSession.user_id == current_user.id
+    )
+    session = await db.scalar(stmt)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found",
+        )
+
+    if session.status != SessionStatus.READY:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot start interview in status: {session.status}",
+        )
+
+    # Set status to IN_PROGRESS and start
+    session.status = SessionStatus.IN_PROGRESS
+    await db.flush()
+
+    from app.services.interview.interview_engine import InterviewEngine
+    engine = InterviewEngine(db)
+    try:
+        greeting = await engine.generate_next_turn(session_id)
+        await db.commit()
+        await db.refresh(session)
+        return InterviewStartResponse(
+            message=greeting,
+            interview_state=session.interview_state,
+            session_status=session.status,
+        )
+    except Exception as e:
+        logger.error("Failed to start interview conversation", session_id=session_id, error=str(e))
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start interview: {e!s}",
+        ) from e
+
+
+@router.post(
+    "/session/{session_id}/respond",
+    response_model=InterviewRespondResponse,
+    summary="Submit candidate response and receive next interviewer turn",
+)
+async def respond_interview(
+    session_id: uuid.UUID,
+    payload: InterviewRespondRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save candidate response, run InterviewEngine, and return interviewer response."""
+    stmt = select(InterviewSession).filter(
+        InterviewSession.id == session_id, InterviewSession.user_id == current_user.id
+    )
+    session = await db.scalar(stmt)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found",
+        )
+
+    if session.status != SessionStatus.IN_PROGRESS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Interview is not in progress. Status: {session.status}",
+        )
+
+    clean_msg = payload.message.strip()
+    if not clean_msg:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Response message content cannot be empty",
+        )
+
+    from app.services.interview.conversation_service import ConversationService
+    from app.services.interview.interview_engine import InterviewEngine
+    from app.shared.enums import InterviewMessageRole
+
+    conv_service = ConversationService(db)
+    engine = InterviewEngine(db)
+
+    try:
+        # Save user response
+        await conv_service.save_message(
+            session_id=session_id,
+            role=InterviewMessageRole.CANDIDATE,
+            content=clean_msg,
+        )
+
+        # Generate next interviewer turn
+        reply = await engine.generate_next_turn(session_id)
+        await db.commit()
+        await db.refresh(session)
+
+        return InterviewRespondResponse(
+            message=reply,
+            interview_state=session.interview_state,
+            session_status=session.status,
+        )
+    except Exception as e:
+        logger.error("Failed to generate interviewer reply", session_id=session_id, error=str(e))
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Interviewer response generation failed: {e!s}",
+        ) from e
+
+
+@router.get(
+    "/session/{session_id}/messages",
+    response_model=list[MessageResponseSchema],
+    summary="Retrieve full conversation history for this session",
+)
+async def get_session_messages(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve all persisted chat messages for the interview session."""
+    stmt = select(InterviewSession).filter(
+        InterviewSession.id == session_id, InterviewSession.user_id == current_user.id
+    )
+    session = await db.scalar(stmt)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found",
+        )
+
+    from app.services.interview.conversation_service import ConversationService
+    conv_service = ConversationService(db)
+    history = await conv_service.load_full_history(session_id)
+    return [
+        MessageResponseSchema(
+            id=m.id,
+            role=m.role,
+            content=m.content,
+            sequence_number=m.sequence_number,
+            created_at=m.created_at,
+        )
+        for m in history
+    ]

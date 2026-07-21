@@ -10,6 +10,7 @@ from app.models.interview import (
     InterviewBlueprint,
     InterviewCompetencyScore,
     InterviewEvent,
+    InterviewMessage,
     InterviewQuestion,
     InterviewResponse,
     InterviewSession,
