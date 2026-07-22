@@ -30,6 +30,53 @@ from app.shared.enums import (
 logger = structlog.get_logger()
 
 
+def clean_interviewer_message(message: str) -> str:
+    """Safeguard filter to strip forbidden diagnostic/praise prefixes from LLM responses."""
+    import re
+    cleaned = message.strip()
+    
+    # 1. Clean standalone or beginning-of-message praise
+    praise_pattern = r"^(that's a good start\.?|great start\.?|nice start\.?|good start\.?|that's a great start\.?|nice job\.?|excellent job\.?)\s*"
+    cleaned = re.sub(praise_pattern, "", cleaned, flags=re.IGNORECASE)
+    
+    # 2. Clean praise that occurs immediately after a conversational bridge (e.g. "Got it. That's a great start, Aditya.")
+    bridge_praise_pattern = r"^(got it|makes sense|understood|no worries|interesting|i see)\.?\s+(that's a good start|that's a great start|great start|nice start|good start|nice job|excellent job)[^.!?]*[.!?]\s*"
+    cleaned = re.sub(bridge_praise_pattern, r"\1. ", cleaned, flags=re.IGNORECASE)
+    
+    # Capitalize the first letter of the cleaned message
+    if cleaned:
+        cleaned = cleaned[0].upper() + cleaned[1:]
+    return cleaned
+
+
+def _calculate_active_time(history: list[InterviewMessage], target_section_index: int) -> tuple[float, float]:
+    """Calculates active session elapsed seconds and active section elapsed seconds.
+    Caps each turn response time to 120 seconds to ignore AFK/idle gaps.
+    """
+    total_active_seconds = 0.0
+    section_active_seconds = 0.0
+    sec_idx = 0
+
+    msg_map = {m.sequence_number: m for m in history}
+
+    for msg in history:
+        if msg.role == InterviewMessageRole.INTERVIEWER and msg.question_type == QuestionType.TRANSITION.value:
+            sec_idx += 1
+
+        if msg.role == InterviewMessageRole.CANDIDATE:
+            prev = msg_map.get(msg.sequence_number - 1)
+            if prev and prev.role == InterviewMessageRole.INTERVIEWER:
+                delta = (msg.created_at - prev.created_at).total_seconds()
+                # Cap response time to 120 seconds to ignore idle/AFK time
+                capped_delta = min(max(0.0, delta), 120.0)
+                
+                total_active_seconds += capped_delta
+                if sec_idx == target_section_index:
+                    section_active_seconds += capped_delta
+
+    return total_active_seconds, section_active_seconds
+
+
 class InterviewEngine:
     """Orchestrates mock interview conversation flow by coordinating history fetches,
     decision evaluations, state transitions, prompt building, and structured turn analysis.
@@ -143,11 +190,21 @@ class InterviewEngine:
 
         # 5. Build prompt context using updated state
         memory_ctx = await self.conversation_service.load_summary(session_id)
+        
+        # Calculate active elapsed and remaining time
+        active_elapsed_seconds, active_section_seconds = _calculate_active_time(
+            list(history), session.current_section_index or 0
+        )
+        active_elapsed_minutes = active_elapsed_seconds / 60.0
+        active_remaining_minutes = max(0.0, session.duration_minutes - active_elapsed_minutes)
+
         prompt_ctx = self.prompt_builder.build_prompts(
             session,
             list(history)[-10:],
             memory_context=memory_ctx,
             current_difficulty=current_difficulty.value,
+            active_elapsed_minutes=active_elapsed_minutes,
+            active_remaining_minutes=active_remaining_minutes,
         )
 
         # 6. Generate response from LLM Agent
@@ -205,6 +262,9 @@ class InterviewEngine:
             current_difficulty=current_difficulty,
             blueprint_json=session.blueprint.blueprint_json if session.blueprint else None,
             history=history,
+            section_active_seconds=active_section_seconds,
+            session_active_seconds=active_elapsed_seconds,
+            session_duration_minutes=session.duration_minutes,
         )
 
         # Apply State Machine transitions for next turn
@@ -227,12 +287,22 @@ class InterviewEngine:
         # the interviewer message to match the new state, discarding the temporary technical question.
         if next_state in (InterviewState.CLOSING, InterviewState.COMPLETED):
             logger.info("State transitioned to CLOSING/COMPLETED. Regenerating interviewer message.", next_state=next_state.value)
+            
+            # Recalculate time since history or state might have advanced
+            active_elapsed_seconds_regen, active_section_seconds_regen = _calculate_active_time(
+                list(history), session.current_section_index or 0
+            )
+            active_elapsed_minutes_regen = active_elapsed_seconds_regen / 60.0
+            active_remaining_minutes_regen = max(0.0, session.duration_minutes - active_elapsed_minutes_regen)
+            
             # Re-build prompt using the new state
             prompt_ctx = self.prompt_builder.build_prompts(
                 session,
                 list(history)[-10:],
                 memory_context=memory_ctx,
                 current_difficulty=current_difficulty.value,
+                active_elapsed_minutes=active_elapsed_minutes_regen,
+                active_remaining_minutes=active_remaining_minutes_regen,
             )
             # Re-generate from LLM Agent to get correct closing/thank-you message
             regen_response = await self.interviewer_agent.generate_response(prompt_ctx)
@@ -261,6 +331,9 @@ class InterviewEngine:
             analysis_version="v1",
         )
         self.db.add(turn_analysis)
+
+        # Clean response message from any forbidden praise/diagnostic prefixes
+        agent_response.interviewer_message = clean_interviewer_message(agent_response.interviewer_message)
 
         # Save interviewer response message setting its question_type
         await self.conversation_service.save_message(

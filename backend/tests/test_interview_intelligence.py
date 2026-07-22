@@ -125,6 +125,8 @@ def mock_llm_observation(
     missing_topics=None,
     strengths=None,
     needs_followup=False,
+    should_transition_topic=False,
+    should_transition_section=False,
     message="AI interviewer follow-up question?",
 ):
     """Helper to structure mock LLM response objects."""
@@ -137,6 +139,8 @@ def mock_llm_observation(
         missing_topics=missing_topics or [],
         strengths=strengths or [],
         needs_followup=needs_followup,
+        should_transition_topic=should_transition_topic,
+        should_transition_section=should_transition_section,
     )
     return InterviewerTurnResponse(analysis=obs, interviewer_message=message)
 
@@ -289,7 +293,7 @@ async def test_prevent_premature_section_completion():
     assert decision_one.action != InterviewAction.SECTION_COMPLETE
     assert decision_one.should_transition is False
 
-    # Case B: Coverage is EXCELLENT, and question_count is 3 (matches min_questions)
+    # Case B: Coverage is EXCELLENT, and question_count is 3 (matches min_questions), but should_transition_section is False -> Should CHANGE_TOPIC
     history_three = [
         InterviewMessage(role=InterviewMessageRole.INTERVIEWER, content="Q1", question_type=QuestionType.PRIMARY.value),
         InterviewMessage(role=InterviewMessageRole.CANDIDATE, content="A1"),
@@ -306,8 +310,21 @@ async def test_prevent_premature_section_completion():
         blueprint_json=blueprint,
         history=history_three,
     )
-    assert decision_three.action == InterviewAction.SECTION_COMPLETE
-    assert decision_three.should_transition is True
+    assert decision_three.action == InterviewAction.CHANGE_TOPIC
+    assert decision_three.should_transition is False
+
+    # Case C: Coverage is EXCELLENT, question_count is 3, and should_transition_section is True -> Should SECTION_COMPLETE
+    obs_tr_section = mock_llm_observation(coverage=AnswerQuality.EXCELLENT, should_transition_section=True).analysis
+    decision_tr = engine.decide_next_step(
+        analysis=obs_tr_section,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history_three,
+    )
+    assert decision_tr.action == InterviewAction.SECTION_COMPLETE
+    assert decision_tr.should_transition is True
 
 
 @pytest.mark.asyncio
@@ -413,3 +430,157 @@ async def test_end_to_end_intelligence_execution(db, prep_test_data):
         assert "B-Trees" in turn_analysis.missing_topics
         assert turn_analysis.analysis_version == "v1"
         assert turn_analysis.difficulty_level == DifficultyLevel.MEDIUM.value
+
+
+@pytest.mark.asyncio
+async def test_decision_engine_hybrid_time_gate():
+    """Verify time-gating, safety rails, and dynamic semantic flags in InterviewDecisionEngine."""
+    engine = InterviewDecisionEngine()
+    blueprint = {
+        "estimated_duration": 60,
+        "sections": [
+            {
+                "name": "Database Fundamentals",
+                "duration": 10,  # 10 minutes (600 seconds)
+                "min_questions": 2,
+                "max_questions": 4,
+                "max_followups": 2,
+            }
+        ]
+    }
+
+    # Setup history with 2 candidate turns
+    msg_q = InterviewMessage(role=InterviewMessageRole.INTERVIEWER, content="Q1", question_type=QuestionType.PRIMARY.value)
+    msg_a = InterviewMessage(role=InterviewMessageRole.CANDIDATE, content="A1")
+    history = [msg_q, msg_a]
+
+    # Case 1: Time limit expired (section_active_seconds = 610) -> Should transition
+    decision_time = engine.decide_next_step(
+        analysis=mock_llm_observation().analysis,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history,
+        section_active_seconds=610.0,
+        session_duration_minutes=60,
+    )
+    assert decision_time.action == InterviewAction.SECTION_COMPLETE
+    assert decision_time.should_transition is True
+
+    # Case 2: LLM requests section transition but question count is below min_questions (1 < 2) -> Should NOT transition
+    obs_section_tr = mock_llm_observation(should_transition_section=True).analysis
+    decision_min = engine.decide_next_step(
+        analysis=obs_section_tr,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history,
+        section_active_seconds=100.0,
+        session_duration_minutes=60,
+    )
+    assert decision_min.action != InterviewAction.SECTION_COMPLETE
+
+    # Case 3: LLM requests section transition and question count meets min_questions (history has 2 candidate turns)
+    history_two = [
+        msg_q, msg_a,
+        InterviewMessage(role=InterviewMessageRole.INTERVIEWER, content="Q2", question_type=QuestionType.FOLLOW_UP.value),
+        InterviewMessage(role=InterviewMessageRole.CANDIDATE, content="A2"),
+    ]
+    decision_llm_tr = engine.decide_next_step(
+        analysis=obs_section_tr,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history_two,
+        section_active_seconds=100.0,
+        session_duration_minutes=60,
+    )
+    assert decision_llm_tr.action == InterviewAction.SECTION_COMPLETE
+
+    # Case 4: Hard safety override (question_count = 5) -> Should transition
+    history_five = []
+    for i in range(5):
+        history_five.append(InterviewMessage(role=InterviewMessageRole.INTERVIEWER, content=f"Q{i}", question_type=QuestionType.PRIMARY.value if i == 0 else QuestionType.FOLLOW_UP.value))
+        history_five.append(InterviewMessage(role=InterviewMessageRole.CANDIDATE, content=f"A{i}"))
+    decision_safety = engine.decide_next_step(
+        analysis=mock_llm_observation().analysis,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history_five,
+        section_active_seconds=100.0,
+        session_duration_minutes=60,
+    )
+    assert decision_safety.action == InterviewAction.SECTION_COMPLETE
+
+    # Case 5: LLM requests topic transition -> Should return CHANGE_TOPIC
+    obs_topic_tr = mock_llm_observation(should_transition_topic=True).analysis
+    decision_topic = engine.decide_next_step(
+        analysis=obs_topic_tr,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history,
+        section_active_seconds=100.0,
+    )
+    assert decision_topic.action == InterviewAction.CHANGE_TOPIC
+
+    # Case 6: Session time limit expired (session_active_seconds = 3610 for a 60-min session) -> Should transition to CLOSING
+    decision_session_time = engine.decide_next_step(
+        analysis=mock_llm_observation().analysis,
+        current_state=InterviewState.IN_PROGRESS,
+        current_section_index=0,
+        current_difficulty=DifficultyLevel.MEDIUM,
+        blueprint_json=blueprint,
+        history=history,
+        section_active_seconds=100.0,
+        session_active_seconds=3610.0,
+        session_duration_minutes=60,
+    )
+    assert decision_session_time.action == InterviewAction.SECTION_COMPLETE
+    assert decision_session_time.should_transition is True
+    assert decision_session_time.next_state == InterviewState.CLOSING
+
+
+@pytest.mark.asyncio
+async def test_active_time_calculation():
+    """Verify active-time calculator sums response times accurately and caps idle AFK gaps."""
+    from datetime import datetime, timedelta, timezone
+    from app.services.interview.interview_engine import _calculate_active_time
+
+    base_time = datetime.now(timezone.utc)
+
+    # 1. Normal Turn: Interviewer asks, Candidate replies in 30 seconds
+    m0 = InterviewMessage(sequence_number=0, role=InterviewMessageRole.INTERVIEWER, question_type=QuestionType.PRIMARY.value, created_at=base_time)
+    m1 = InterviewMessage(sequence_number=1, role=InterviewMessageRole.CANDIDATE, created_at=base_time + timedelta(seconds=30))
+
+    # 2. AFK/Idle Turn: Interviewer asks, Candidate goes AFK and replies 10 minutes later (600 seconds)
+    m2 = InterviewMessage(sequence_number=2, role=InterviewMessageRole.INTERVIEWER, question_type=QuestionType.FOLLOW_UP.value, created_at=base_time + timedelta(seconds=40))
+    m3 = InterviewMessage(sequence_number=3, role=InterviewMessageRole.CANDIDATE, created_at=base_time + timedelta(seconds=640))
+
+    # 3. Transition Turn: Moves to Section 2 (sequence_number index 1)
+    m4 = InterviewMessage(sequence_number=4, role=InterviewMessageRole.INTERVIEWER, question_type=QuestionType.TRANSITION.value, created_at=base_time + timedelta(seconds=650))
+    m5 = InterviewMessage(sequence_number=5, role=InterviewMessageRole.CANDIDATE, created_at=base_time + timedelta(seconds=700)) # 50 seconds latency
+
+    history = [m0, m1, m2, m3, m4, m5]
+
+    # Calculate active time
+    total_active, section_active_0 = _calculate_active_time(history, target_section_index=0)
+    _, section_active_1 = _calculate_active_time(history, target_section_index=1)
+
+    # Turn 1: 30 seconds
+    # Turn 2: 600 seconds -> Capped to 120 seconds
+    # Turn 3 (Section 1): 50 seconds
+    # Total Active: 30 + 120 + 50 = 200 seconds
+    assert total_active == 200.0
+
+    # Section 0 Active: Turn 1 (30s) + Turn 2 (120s) = 150 seconds
+    assert section_active_0 == 150.0
+
+    # Section 1 Active: Turn 3 (50s) = 50 seconds
+    assert section_active_1 == 50.0

@@ -154,14 +154,14 @@ async def test_interview_session_creation_success(client, db, test_user_token):
         assert session_db.interview_category == InterviewCategory.TECHNICAL
         assert session_db.role == InterviewRole.BACKEND
         assert session_db.difficulty == DifficultyType.ADAPTIVE
-        assert session_db.duration_minutes == 60
+        assert session_db.duration_minutes == 45
 
         # Assert blueprint details
         stmt_b = select(InterviewBlueprint).filter(InterviewBlueprint.session_id == session_id)
         blueprint_db = await db.scalar(stmt_b)
         assert blueprint_db is not None
         assert blueprint_db.title == "Backend Technical Interview"
-        assert blueprint_db.estimated_duration == 60
+        assert blueprint_db.estimated_duration == 45
         assert blueprint_db.generated_by_profile == "interview_blueprint"
         # Since mocked profile is gemini-flash, resolved model should be gemini-2.5-flash
         assert blueprint_db.generated_model == "gemini/gemini-2.5-flash"

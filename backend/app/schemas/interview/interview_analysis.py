@@ -14,6 +14,8 @@ class InterviewAnalysis(BaseModel):
     missing_topics: list[str]
     strengths: list[str]
     needs_followup: bool
+    should_transition_topic: bool
+    should_transition_section: bool
 
 
 class InterviewerTurnResponse(BaseModel):

@@ -39,7 +39,13 @@ def create_mock_completion_response(data: dict):
         "missing_topics": [],
         "strengths": [],
         "needs_followup": False,
+        "should_transition_topic": False,
+        "should_transition_section": False,
     }
+    if "should_transition_topic" not in analysis_data:
+        analysis_data["should_transition_topic"] = False
+    if "should_transition_section" not in analysis_data:
+        analysis_data["should_transition_section"] = False
     analysis = InterviewAnalysis(**analysis_data)
     return InterviewerTurnResponse(analysis=analysis, interviewer_message=msg)
 

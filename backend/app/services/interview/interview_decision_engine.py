@@ -38,6 +38,9 @@ class InterviewDecisionEngine:
         current_difficulty: DifficultyLevel,
         blueprint_json: dict | None,
         history: Sequence[InterviewMessage],
+        section_active_seconds: float = 0.0,
+        session_active_seconds: float = 0.0,
+        session_duration_minutes: int = 45,
     ) -> InterviewDecision:
         # 1. Handle non-in-progress state transitions
         if current_state == InterviewState.GREETING:
@@ -155,12 +158,67 @@ class InterviewDecisionEngine:
                 reason="Poor communication detected. Asking for clarification.",
             )
 
-        # Follow up on missing topics if budget permits and limits not reached,
-        # but NOT if the candidate replied poorly (e.g. they don't know / don't remember).
+        # 4.5. Resolve Session Timeout (Force transition to CLOSING if total duration exceeded)
+        is_session_time_up = session_active_seconds >= session_duration_minutes * 60.0
+        if is_session_time_up:
+            return InterviewDecision(
+                action=InterviewAction.SECTION_COMPLETE,
+                next_difficulty=next_difficulty,
+                should_transition=True,
+                next_state=InterviewState.CLOSING,
+                question_type=QuestionType.TRANSITION,
+                reason="Total interview session duration expired. Transitioning to CLOSING.",
+            )
+
+        # 5. Resolve Section Transitions (Proportional Time-gated & Safety Rails)
+        blueprint_total = 60.0
+        if blueprint_json:
+            blueprint_total = float(blueprint_json.get("estimated_duration", 60.0))
+            if blueprint_total <= 0.0:
+                blueprint_total = 60.0
+
+        sec_duration_raw = 15.0
+        if blueprint_json and "sections" in blueprint_json:
+            sections = blueprint_json.get("sections", [])
+            if 0 <= current_section_index < len(sections):
+                sec = sections[current_section_index]
+                sec_duration_raw = float(sec.get("duration", 15.0))
+
+        # Calculate proportional duration relative to session_duration_minutes
+        proportion = sec_duration_raw / blueprint_total
+        section_duration_seconds = proportion * session_duration_minutes * 60.0
+
+        is_time_up = section_active_seconds >= section_duration_seconds
+        is_limit_reached = question_count >= 5
+        is_llm_transition_request = getattr(analysis, "should_transition_section", False) and question_count >= min_questions
+
+        if is_time_up or is_limit_reached or is_llm_transition_request:
+            reason = "Time limit reached." if is_time_up else ("Hard safety question limit reached." if is_limit_reached else "LLM transition request approved.")
+            return InterviewDecision(
+                action=InterviewAction.SECTION_COMPLETE,
+                next_difficulty=next_difficulty,
+                should_transition=True,
+                question_type=QuestionType.TRANSITION,
+                reason=f"Blueprint section complete. {reason} Advancing section index or state.",
+            )
+
+        # 6. Resolve Topic Transitions (Internally switching projects/topics)
+        is_llm_topic_change = getattr(analysis, "should_transition_topic", False)
+        is_followup_limit_reached = followup_count >= max_followups
+
+        if is_llm_topic_change or is_followup_limit_reached:
+            reason = "LLM topic change requested." if is_llm_topic_change else "Follow-up question budget reached."
+            return InterviewDecision(
+                action=InterviewAction.CHANGE_TOPIC,
+                next_difficulty=next_difficulty,
+                should_transition=False,
+                question_type=QuestionType.PRIMARY,
+                reason=f"Change project/topic: {reason}",
+            )
+
+        # 7. Resolve Follow-up (Drilling down if budget and criteria permit)
         if (
             len(analysis.missing_topics) > 0
-            and followup_count < max_followups
-            and question_count < max_questions
             and analysis.technical_accuracy != AnswerQuality.POOR
             and analysis.depth != AnswerQuality.POOR
         ):
@@ -170,24 +228,6 @@ class InterviewDecisionEngine:
                 should_transition=False,
                 question_type=QuestionType.FOLLOW_UP,
                 reason=f"Missing concepts detected ({', '.join(analysis.missing_topics)}). Follow-up initiated.",
-            )
-
-        # Transition section if question limit reached, or min questions met with good/excellent coverage,
-        # OR if min questions met and candidate's answers show poor accuracy/depth (avoiding robotic grilling).
-        if question_count >= max_questions or (
-            question_count >= min_questions
-            and (
-                analysis.coverage in (AnswerQuality.EXCELLENT, AnswerQuality.GOOD)
-                or analysis.technical_accuracy == AnswerQuality.POOR
-                or analysis.depth == AnswerQuality.POOR
-            )
-        ):
-            return InterviewDecision(
-                action=InterviewAction.SECTION_COMPLETE,
-                next_difficulty=next_difficulty,
-                should_transition=True,
-                question_type=QuestionType.TRANSITION,
-                reason="Blueprint section complete. Advancing section index or state.",
             )
 
         # Otherwise, ask the next primary question in this section
