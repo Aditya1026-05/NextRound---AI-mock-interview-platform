@@ -1,5 +1,4 @@
 import uuid
-
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,19 +9,30 @@ from app.core.observability import (
     step_completed,
     step_failed,
 )
+from app.models.interview.interview_message import InterviewMessage
 from app.models.interview.interview_session import InterviewSession
+from app.models.interview.interview_turn_analysis import InterviewTurnAnalysis
 from app.services.interview.conversation_service import ConversationService
 from app.services.interview.interviewer_agent import InterviewerAgent
 from app.services.interview.prompt_builder import InterviewPromptBuilder
 from app.services.interview.state_machine import InterviewStateMachine
-from app.shared.enums import InterviewMessageRole, InterviewState, SessionStatus
+from app.services.interview.interview_decision_engine import InterviewDecisionEngine
+from app.shared.enums import (
+    AnswerQuality,
+    DifficultyLevel,
+    DifficultyType,
+    InterviewMessageRole,
+    InterviewState,
+    QuestionType,
+    SessionStatus,
+)
 
 logger = structlog.get_logger()
 
 
 class InterviewEngine:
     """Orchestrates mock interview conversation flow by coordinating history fetches,
-    state progressions, prompt building, and model generations.
+    decision evaluations, state transitions, prompt building, and structured turn analysis.
     """
 
     def __init__(self, db: AsyncSession):
@@ -31,10 +41,11 @@ class InterviewEngine:
         self.state_machine = InterviewStateMachine()
         self.prompt_builder = InterviewPromptBuilder()
         self.interviewer_agent = InterviewerAgent()
+        self.decision_engine = InterviewDecisionEngine()
 
     @log_operation(category="INTERVIEW", name="Interview Engine Turn Execution")
     async def generate_next_turn(self, session_id: uuid.UUID) -> str:
-        """Advance interview states, generate prompts, invoke LLM, and persist AI response."""
+        """Advance interview states, evaluate responses, invoke LLM structured analysis, and persist turn metadata."""
         # 1. Fetch the session
         stmt = select(InterviewSession).filter(InterviewSession.id == session_id)
         session = await self.db.scalar(stmt)
@@ -48,26 +59,162 @@ class InterviewEngine:
             resume_id=str(session.resume_id) if session.resume_id else None,
         )
 
-        # 2. Fetch recent conversation history
+        # 2. Fetch conversation history
         history = await self.conversation_service.load_recent_history(session_id)
+        is_first_turn = len(history) == 0
 
-        # 3. Resolve active sections count
-        total_sections = 0
-        if session.blueprint and session.blueprint.blueprint_json:
-            total_sections = len(session.blueprint.blueprint_json.get("sections", []))
+        # Resolve dynamic/effective difficulty
+        current_difficulty = DifficultyLevel.MEDIUM
+        if session.difficulty == DifficultyType.EASY:
+            current_difficulty = DifficultyLevel.EASY
+        elif session.difficulty == DifficultyType.HARD:
+            current_difficulty = DifficultyLevel.HARD
+        elif session.difficulty == DifficultyType.MEDIUM:
+            current_difficulty = DifficultyLevel.MEDIUM
+        else:  # ADAPTIVE
+            # Find the most recent turn analysis to fetch its difficulty level
+            stmt_ta = (
+                select(InterviewTurnAnalysis)
+                .join(InterviewMessage)
+                .filter(InterviewMessage.session_id == session.id)
+                .order_by(InterviewTurnAnalysis.created_at.desc())
+                .limit(1)
+            )
+            ta_rec = await self.db.scalar(stmt_ta)
+            if ta_rec:
+                current_difficulty = DifficultyLevel(ta_rec.difficulty_level)
 
-        # 4. Advance State
-        old_state = session.interview_state
-        old_section = session.current_section_index
+        # 3. Handle First Turn Initialization
+        if is_first_turn:
+            next_state = InterviewState.GREETING
+            next_section = 0
+            session.interview_state = next_state.value
+            session.current_section_index = next_section
+            await self.db.flush()
 
-        next_state, next_section = self.state_machine.advance_state(
-            session, list(history), total_sections
+            # Build prompt context
+            prompt_ctx = self.prompt_builder.build_prompts(
+                session,
+                list(history),
+                current_difficulty=current_difficulty.value,
+            )
+
+            # Generate first greeting from agent
+            agent_response = await self.interviewer_agent.generate_response(prompt_ctx)
+
+            # Save interviewer message with type PRIMARY
+            await self.conversation_service.save_message(
+                session_id=session.id,
+                role=InterviewMessageRole.INTERVIEWER,
+                content=agent_response.interviewer_message,
+                question_type=QuestionType.PRIMARY.value,
+            )
+
+            print(f"\n──────── TURN 1 ────────")
+            print("Starting Mock Interview")
+            print(f"State Machine State .... GREETING (Section: 0)")
+            print(f"Difficulty ............. {current_difficulty.value}")
+            print(f"Interviewer Greeting ... {agent_response.interviewer_message[:60]}...")
+            print("────────────────────────\n")
+
+            return agent_response.interviewer_message
+
+        # Not first turn — we have a candidate response in history
+        candidate_msg = history[-1]
+        if candidate_msg.role != InterviewMessageRole.CANDIDATE:
+            raise ValueError("Expected latest message in history to be a candidate response")
+
+        # 4. Process deterministic pre-transitions (lag mitigation)
+        is_greeting_reply = session.interview_state == InterviewState.GREETING.value
+        is_intro_reply = session.interview_state == InterviewState.INTRODUCTION.value
+        is_closing_reply = session.interview_state == InterviewState.CLOSING.value
+
+        if is_greeting_reply:
+            session.interview_state = InterviewState.INTRODUCTION.value
+            await self.db.flush()
+        elif is_intro_reply:
+            session.interview_state = InterviewState.IN_PROGRESS.value
+            session.current_section_index = 0
+            await self.db.flush()
+        elif is_closing_reply:
+            session.interview_state = InterviewState.COMPLETED.value
+            session.status = SessionStatus.COMPLETED
+            await self.db.flush()
+
+        # 5. Build prompt context using updated state
+        memory_ctx = await self.conversation_service.load_summary(session_id)
+        prompt_ctx = self.prompt_builder.build_prompts(
+            session,
+            list(history)[-10:],
+            memory_context=memory_ctx,
+            current_difficulty=current_difficulty.value,
         )
 
-        # Validate transition constraints
-        self.state_machine.validate_transition(InterviewState(old_state), next_state)
+        # 6. Generate response from LLM Agent
+        agent_response = await self.interviewer_agent.generate_response(prompt_ctx)
+        analysis = agent_response.analysis
 
-        # Update model properties
+        # 7. Persist Turn Metrics & Message for Deterministic/Warmup Turns
+        if is_greeting_reply or is_intro_reply or is_closing_reply:
+            # Observational records are N/A for these warm-up/close phases
+            turn_analysis = InterviewTurnAnalysis(
+                message_id=candidate_msg.id,
+                technical_accuracy=AnswerQuality.NOT_APPLICABLE.value,
+                depth=AnswerQuality.NOT_APPLICABLE.value,
+                coverage=AnswerQuality.NOT_APPLICABLE.value,
+                communication=AnswerQuality.NOT_APPLICABLE.value,
+                confidence=AnswerQuality.NOT_APPLICABLE.value,
+                missing_topics=[],
+                strengths=[],
+                difficulty_level=current_difficulty.value,
+                blueprint_section="N/A",
+                analysis_version="v1",
+            )
+            self.db.add(turn_analysis)
+
+            # Resolve question type
+            q_type = QuestionType.PRIMARY.value
+            if is_greeting_reply:
+                q_type = QuestionType.INTRODUCTION.value
+            elif is_closing_reply:
+                q_type = QuestionType.CLOSING.value
+
+            # Save next interviewer message
+            await self.conversation_service.save_message(
+                session_id=session.id,
+                role=InterviewMessageRole.INTERVIEWER,
+                content=agent_response.interviewer_message,
+                question_type=q_type,
+            )
+
+            turn_num = len(history) + 1
+            print(f"\n──────── TURN {turn_num} ────────")
+            print("Candidate Response Saved")
+            print("Deterministic Transition (Warmup/Closing)")
+            print(f"State Machine State .... {session.interview_state} (Section: {session.current_section_index})")
+            print("────────────────────────\n")
+
+            return agent_response.interviewer_message
+
+        # 8. Main IN_PROGRESS Turn Execution
+        # Run Decision Engine (rules-based transitions)
+        decision = self.decision_engine.decide_next_step(
+            analysis=analysis,
+            current_state=InterviewState(session.interview_state),
+            current_section_index=session.current_section_index or 0,
+            current_difficulty=current_difficulty,
+            blueprint_json=session.blueprint.blueprint_json if session.blueprint else None,
+            history=history,
+        )
+
+        # Apply State Machine transitions for next turn
+        next_state, next_section = self.state_machine.advance_state(
+            session=session,
+            action=decision.action.value,
+            should_transition=decision.should_transition,
+            next_state_override=decision.next_state.value if decision.next_state else None,
+        )
+
         session.interview_state = next_state.value
         session.current_section_index = next_section
 
@@ -76,41 +223,68 @@ class InterviewEngine:
 
         await self.db.flush()
 
-        if old_state != next_state.value or old_section != next_section:
-            logger.info(
-                f"Interview State Transitioned: {old_state} -> {next_state.value} (Section: {old_section} -> {next_section})",
-                category="INTERVIEW",
-                old_state=old_state,
-                next_state=next_state.value,
-                old_section=old_section,
-                next_section=next_section,
+        # If the state machine transitioned to CLOSING or COMPLETED, we must regenerate
+        # the interviewer message to match the new state, discarding the temporary technical question.
+        if next_state in (InterviewState.CLOSING, InterviewState.COMPLETED):
+            logger.info("State transitioned to CLOSING/COMPLETED. Regenerating interviewer message.", next_state=next_state.value)
+            # Re-build prompt using the new state
+            prompt_ctx = self.prompt_builder.build_prompts(
+                session,
+                list(history)[-10:],
+                memory_context=memory_ctx,
+                current_difficulty=current_difficulty.value,
             )
+            # Re-generate from LLM Agent to get correct closing/thank-you message
+            regen_response = await self.interviewer_agent.generate_response(prompt_ctx)
+            # Discard the temporary technical question, but keep original candidate response analysis observations
+            agent_response.interviewer_message = regen_response.interviewer_message
 
-        if next_state == InterviewState.COMPLETED:
-            final_msg = "The interview is now completed. Thank you for your time."
-            await self.conversation_service.save_message(
-                session_id=session.id,
-                role=InterviewMessageRole.INTERVIEWER,
-                content=final_msg,
-            )
-            return final_msg
+        # Save observations linked to candidate's message
+        active_sec_name = "N/A"
+        if session.blueprint and session.blueprint.blueprint_json:
+            sections = session.blueprint.blueprint_json.get("sections", [])
+            idx = session.current_section_index
+            if idx is not None and 0 <= idx < len(sections):
+                active_sec_name = sections[idx].get("name", "N/A")
 
-        # 5. Build prompt context
-        memory_ctx = await self.conversation_service.load_summary(session_id)
-        prompt_ctx = self.prompt_builder.build_prompts(session, list(history), memory_ctx)
-        step_completed("INTERVIEW", "Prompt context built")
+        turn_analysis = InterviewTurnAnalysis(
+            message_id=candidate_msg.id,
+            technical_accuracy=analysis.technical_accuracy.value,
+            depth=analysis.depth.value,
+            coverage=analysis.coverage.value,
+            communication=analysis.communication.value,
+            confidence=analysis.confidence.value,
+            missing_topics=analysis.missing_topics,
+            strengths=analysis.strengths,
+            difficulty_level=decision.next_difficulty.value,
+            blueprint_section=active_sec_name,
+            analysis_version="v1",
+        )
+        self.db.add(turn_analysis)
 
-        # 6. Generate response from agent
-        logger.info("Invoking Interviewer Agent", category="INTERVIEW")
-        response_text = await self.interviewer_agent.generate_response(prompt_ctx)
-        step_completed("INTERVIEW", "Interviewer Agent response generated")
-
-        # 7. Persist generated message
+        # Save interviewer response message setting its question_type
         await self.conversation_service.save_message(
             session_id=session.id,
             role=InterviewMessageRole.INTERVIEWER,
-            content=response_text,
+            content=agent_response.interviewer_message,
+            question_type=decision.question_type.value,
         )
-        step_completed("INTERVIEW", "Interviewer Agent response saved")
 
-        return response_text
+        # 9. Format structured logging output
+        turn_num = len(history) + 1
+        print(f"\n──────── TURN {turn_num} ────────")
+        print("Candidate Response Saved")
+        print("InterviewerAgent Completed")
+        print(f"Technical Accuracy ..... {analysis.technical_accuracy.value}")
+        print(f"Coverage ............... {analysis.coverage.value}")
+        print(f"Depth .................. {analysis.depth.value}")
+        print(f"Communication .......... {analysis.communication.value}")
+        print(f"Confidence ............. {analysis.confidence.value}")
+        print(f"Missing Topics ......... {', '.join(analysis.missing_topics) if analysis.missing_topics else 'None'}")
+        print(f"Strengths .............. {', '.join(analysis.strengths) if analysis.strengths else 'None'}")
+        print(f"Decision Engine Action . {decision.action.value}")
+        print(f"Next Difficulty ........ {decision.next_difficulty.value}")
+        print(f"State Machine State .... {next_state.value} (Section: {next_section})")
+        print("────────────────────────\n")
+
+        return agent_response.interviewer_message

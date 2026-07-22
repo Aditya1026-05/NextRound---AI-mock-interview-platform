@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Send, Play, Bot, User, ArrowLeft, Loader2, MessageSquare, AlertTriangle, X } from 'lucide-react';
+import { Send, Play, Bot, User, ArrowLeft, Loader2, MessageSquare, AlertTriangle, X, Clock } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 
 interface Message {
@@ -25,6 +25,7 @@ interface SessionDetails {
   status: 'CREATED' | 'READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   resume_filename: string;
   blueprint_title: string | null;
+  started_at: string | null;
 }
 
 export default function InterviewSession() {
@@ -43,8 +44,50 @@ export default function InterviewSession() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [inputVal, setInputVal] = useState('');
   const [sending, setSending] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Initialize and update the countdown timer
+  useEffect(() => {
+    if (!session) return;
+    
+    const calculateTimeLeft = () => {
+      if (session.status === 'IN_PROGRESS' && session.started_at) {
+        const start = new Date(session.started_at).getTime();
+        const now = Date.now();
+        const elapsed = Math.floor((now - start) / 1000);
+        const limit = session.duration_minutes * 60;
+        return Math.max(0, limit - elapsed);
+      }
+      return session.duration_minutes * 60;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    let interval: NodeJS.Timeout | undefined;
+    if (session.status === 'IN_PROGRESS') {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (interval) clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [session?.status, session?.started_at, session?.duration_minutes]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -204,6 +247,12 @@ export default function InterviewSession() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {session.status === 'IN_PROGRESS' && (
+              <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded border border-red-500/25 bg-red-500/10 text-red-500 flex items-center gap-1">
+                <Clock className="h-3 w-3 animate-pulse text-red-500" />
+                {formatTime(timeLeft)}
+              </span>
+            )}
             <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
               session.status === 'COMPLETED'
                 ? 'text-zinc-500 bg-zinc-500/10 border-zinc-500/25'

@@ -15,6 +15,7 @@ from app.models.interview import (
     InterviewResponse,
     InterviewSession,
     InterviewTemplate,
+    InterviewTurnAnalysis,
     QuestionBank,
     QuestionCompetency,
     QuestionTestCase,

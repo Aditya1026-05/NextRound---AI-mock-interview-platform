@@ -36,6 +36,10 @@ class InterviewMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Integer,
         nullable=False,
     )
+    question_type: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
 
     session: Mapped["InterviewSession"] = relationship(
         "InterviewSession",

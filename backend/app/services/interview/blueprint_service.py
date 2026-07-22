@@ -17,6 +17,10 @@ class BlueprintSectionSchema(BaseModel):
 
     name: str
     duration: int
+    min_questions: int = 2
+    max_questions: int = 4
+    max_followups: int = 2
+
 
 
 class BlueprintResponseSchema(BaseModel):

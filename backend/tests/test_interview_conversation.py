@@ -26,9 +26,22 @@ from app.shared.enums import (
 
 
 def create_mock_completion_response(data: dict):
-    from app.services.interview.interviewer_agent import InterviewerResponseSchema
+    from app.schemas.interview.interview_analysis import InterviewerTurnResponse, InterviewAnalysis
+    from app.shared.enums import AnswerQuality
+    
     msg = data.get("interviewer_message", "")
-    return InterviewerResponseSchema(interviewer_message=msg)
+    analysis_data = data.get("analysis") or {
+        "technical_accuracy": AnswerQuality.GOOD.value,
+        "depth": AnswerQuality.GOOD.value,
+        "coverage": AnswerQuality.GOOD.value,
+        "communication": AnswerQuality.GOOD.value,
+        "confidence": AnswerQuality.GOOD.value,
+        "missing_topics": [],
+        "strengths": [],
+        "needs_followup": False,
+    }
+    analysis = InterviewAnalysis(**analysis_data)
+    return InterviewerTurnResponse(analysis=analysis, interviewer_message=msg)
 
 
 @pytest.fixture(autouse=True)

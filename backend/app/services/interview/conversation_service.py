@@ -28,6 +28,7 @@ class ConversationService:
         role: InterviewMessageRole,
         content: str,
         sequence_number: int | None = None,
+        question_type: str | None = None,
     ) -> InterviewMessage:
         """Persist a message turn to the database."""
         if sequence_number is None:
@@ -38,6 +39,7 @@ class ConversationService:
             role=role,
             content=content,
             sequence_number=sequence_number,
+            question_type=question_type,
         )
         self.db.add(msg)
         await self.db.flush()

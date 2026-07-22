@@ -45,6 +45,7 @@ class InterviewSessionDetailResponse(BaseModel):
     status: SessionStatus
     resume_filename: str
     blueprint_title: str | None = None
+    started_at: datetime | None = None
 
 
 @router.post(
@@ -123,6 +124,7 @@ async def get_session_detail(
         status=session.status,
         resume_filename=resume_name,
         blueprint_title=blueprint_title,
+        started_at=session.started_at,
     )
 
 
@@ -181,7 +183,9 @@ async def start_interview(
         )
 
     # Set status to IN_PROGRESS and start
+    from datetime import timezone
     session.status = SessionStatus.IN_PROGRESS
+    session.started_at = datetime.now(timezone.utc)
     await db.flush()
 
     from app.services.interview.interview_engine import InterviewEngine

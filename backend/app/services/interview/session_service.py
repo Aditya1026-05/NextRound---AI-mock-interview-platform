@@ -12,6 +12,7 @@ from app.models.resume.resume import Resume
 from app.services.interview.blueprint_service import BlueprintService
 from app.shared.enums import (
     DifficultyType,
+    EndedReasonType,
     InterviewCategory,
     InterviewRole,
     ResumeStatus,
@@ -111,6 +112,18 @@ class InterviewSessionService:
         summary = profile_json.get("summary") or profile_json.get(
             "overall_technical_profile", ""
         )
+
+        # 3.5 Clean up and finalize any active sessions for this user (lag/midway close safety)
+        stmt_active = select(InterviewSession).filter(
+            InterviewSession.user_id == user_id,
+            InterviewSession.status.in_([SessionStatus.CREATED, SessionStatus.READY, SessionStatus.IN_PROGRESS])
+        )
+        active_sessions = await self.db.scalars(stmt_active)
+        for act_sess in active_sessions.all():
+            act_sess.status = SessionStatus.COMPLETED
+            act_sess.ended_reason = EndedReasonType.USER_LEFT
+            if act_sess.overall_score is None:
+                act_sess.overall_score = 0.0
 
         # 4. Initialize session in CREATED status
         session = InterviewSession(

@@ -8,6 +8,7 @@ from app.models.interview.interview_question import InterviewQuestion
 from app.models.interview.interview_response import InterviewResponse
 from app.models.interview.interview_session import InterviewSession
 from app.models.interview.interview_template import InterviewTemplate
+from app.models.interview.interview_turn_analysis import InterviewTurnAnalysis
 from app.models.interview.question_bank import QuestionBank
 from app.models.interview.question_competency import QuestionCompetency
 from app.models.interview.question_test_case import QuestionTestCase
@@ -24,6 +25,7 @@ __all__ = [
     "InterviewResponse",
     "InterviewSession",
     "InterviewTemplate",
+    "InterviewTurnAnalysis",
     "QuestionBank",
     "QuestionCompetency",
     "QuestionTestCase",
