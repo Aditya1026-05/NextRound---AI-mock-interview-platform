@@ -11,12 +11,17 @@ from app.core.dependencies import get_current_active_user
 from app.dependencies.providers import get_db
 from app.models.identity.user import User
 from app.models.interview.interview_session import InterviewSession
+from app.models.interview.interview_message import InterviewMessage
 from app.services.interview.session_service import InterviewSessionService
 from app.shared.enums import (
     DifficultyType,
     InterviewCategory,
     InterviewRole,
     SessionStatus,
+)
+from app.schemas.interview.interview_evaluation import (
+    InterviewEvaluationResponseSchema,
+    TimelineReviewResponseSchema,
 )
 
 router = APIRouter()
@@ -311,3 +316,156 @@ async def get_session_messages(
         )
         for m in history
     ]
+
+
+@router.post(
+    "/session/{session_id}/evaluate",
+    response_model=InterviewEvaluationResponseSchema,
+    summary="Generate and persist evaluation report for a completed session",
+)
+async def evaluate_session(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Evaluate an interview session, synthesizing qualitative and quantitative metrics."""
+    # First verify ownership
+    stmt = select(InterviewSession).filter(
+        InterviewSession.id == session_id, InterviewSession.user_id == current_user.id
+    )
+    session = await db.scalar(stmt)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found",
+        )
+
+    from app.services.interview.evaluation_service import EvaluationService
+    service = EvaluationService(db)
+    evaluation = await service.generate_evaluation(session_id)
+
+    # Convert database model timeline reviews into response schema format
+    stmt_msgs = (
+        select(InterviewMessage)
+        .filter(InterviewMessage.session_id == session_id)
+    )
+    msgs_seq = await db.scalars(stmt_msgs)
+    msgs_map = {str(m.id): m for m in msgs_seq.all()}
+
+    from app.shared.enums import InterviewMessageRole
+    timeline_responses = []
+    for item in evaluation.timeline_reviews:
+        q_id = item.get("question_id")
+        q_msg = msgs_map.get(str(q_id))
+        
+        q_content = q_msg.content if q_msg else "Unknown Question"
+        a_content = "No Answer Provided"
+        if q_msg:
+            candidate_reply = None
+            for m in msgs_map.values():
+                if m.role == InterviewMessageRole.CANDIDATE and m.sequence_number == q_msg.sequence_number + 1:
+                    candidate_reply = m
+                    break
+            if candidate_reply:
+                a_content = candidate_reply.content
+
+        timeline_responses.append(
+            TimelineReviewResponseSchema(
+                question=q_content,
+                answer=a_content,
+                score=item.get("score", 70),
+                ideal_answer=item.get("ideal_answer", ""),
+                evaluation=item.get("evaluation", ""),
+                strengths=item.get("strengths", []),
+                improvements=item.get("improvements", []),
+            )
+        )
+
+    from app.schemas.interview.interview_evaluation import InterviewEvaluationResponseSchema
+    return InterviewEvaluationResponseSchema(
+        id=evaluation.id,
+        session_id=evaluation.session_id,
+        overall_score=evaluation.overall_score,
+        recommendation=evaluation.recommendation,
+        summary=evaluation.summary,
+        skill_scores=evaluation.skill_scores,
+        timeline_reviews=timeline_responses,
+        evaluation_version=evaluation.evaluation_version,
+    )
+
+
+@router.get(
+    "/session/{session_id}/evaluation",
+    response_model=InterviewEvaluationResponseSchema,
+    summary="Retrieve existing evaluation report for a session",
+)
+async def get_session_evaluation(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve the evaluation report if it has been generated."""
+    # First verify ownership
+    stmt_session = select(InterviewSession).filter(
+        InterviewSession.id == session_id, InterviewSession.user_id == current_user.id
+    )
+    session = await db.scalar(stmt_session)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview session not found",
+        )
+
+    from app.models.interview.interview_evaluation import InterviewEvaluation
+    stmt_eval = select(InterviewEvaluation).filter(InterviewEvaluation.session_id == session_id)
+    evaluation = await db.scalar(stmt_eval)
+    if not evaluation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evaluation has not been generated for this session",
+        )
+
+    stmt_msgs = select(InterviewMessage).filter(InterviewMessage.session_id == session_id)
+    msgs_seq = await db.scalars(stmt_msgs)
+    msgs_map = {str(m.id): m for m in msgs_seq.all()}
+
+    from app.shared.enums import InterviewMessageRole
+    timeline_responses = []
+    for item in evaluation.timeline_reviews:
+        q_id = item.get("question_id")
+        q_msg = msgs_map.get(str(q_id))
+        
+        q_content = q_msg.content if q_msg else "Unknown Question"
+        a_content = "No Answer Provided"
+        if q_msg:
+            candidate_reply = None
+            for m in msgs_map.values():
+                if m.role == InterviewMessageRole.CANDIDATE and m.sequence_number == q_msg.sequence_number + 1:
+                    candidate_reply = m
+                    break
+            if candidate_reply:
+                a_content = candidate_reply.content
+
+        timeline_responses.append(
+            TimelineReviewResponseSchema(
+                question=q_content,
+                answer=a_content,
+                score=item.get("score", 70),
+                ideal_answer=item.get("ideal_answer", ""),
+                evaluation=item.get("evaluation", ""),
+                strengths=item.get("strengths", []),
+                improvements=item.get("improvements", []),
+            )
+        )
+
+    from app.schemas.interview.interview_evaluation import InterviewEvaluationResponseSchema
+    return InterviewEvaluationResponseSchema(
+        id=evaluation.id,
+        session_id=evaluation.session_id,
+        overall_score=evaluation.overall_score,
+        recommendation=evaluation.recommendation,
+        summary=evaluation.summary,
+        skill_scores=evaluation.skill_scores,
+        timeline_reviews=timeline_responses,
+        evaluation_version=evaluation.evaluation_version,
+    )

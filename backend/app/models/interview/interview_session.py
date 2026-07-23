@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from app.models.ai.candidate_profile import CandidateProfile
     from app.models.identity.user import User
     from app.models.interview.interview_blueprint import InterviewBlueprint
+    from app.models.interview.interview_evaluation import InterviewEvaluation
     from app.models.interview.interview_competency_score import (
         InterviewCompetencyScore,
     )
@@ -117,6 +118,13 @@ class InterviewSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     blueprint: Mapped["InterviewBlueprint | None"] = relationship(
         "InterviewBlueprint",
+        back_populates="session",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    evaluation: Mapped["InterviewEvaluation | None"] = relationship(
+        "InterviewEvaluation",
         back_populates="session",
         uselist=False,
         lazy="selectin",

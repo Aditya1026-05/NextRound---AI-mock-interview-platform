@@ -24,6 +24,8 @@ import Admin from '@/pages/admin';
 import DesignSystem from '@/pages/design-system';
 import NotFound from '@/pages/not-found';
 import Auth from '@/pages/auth';
+import SessionDetail from '@/pages/session-detail';
+
 
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
@@ -62,6 +64,7 @@ function ProtectedRouter() {
       <Route path="/interviews/new" component={InterviewNew} />
       <Route path="/interviews/waiting-room/:id" component={WaitingRoom} />
       <Route path="/interviews/session/:id" component={InterviewSession} />
+      <Route path="/interviews/session/:id/evaluation" component={SessionDetail} />
       <Route path="/interviews/history" component={InterviewHistory} />
       <Route path="/coding" component={Coding} />
       <Route path="/behavioral" component={Behavioral} />

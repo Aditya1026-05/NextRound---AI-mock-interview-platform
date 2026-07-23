@@ -77,7 +77,11 @@ class GeminiProvider(LLMProvider):
             content = response.choices[0].message.content
             if not content:
                 raise ValueError("Empty response content from LLM")
-            data = json.loads(content)
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError as e:
+                logger.error("Failed to decode LLM JSON response", error=str(e), raw_content=content)
+                raise
             if isinstance(data, dict) and len(data) == 1:
                 root_key = next(iter(data))
                 if isinstance(data[root_key], dict) and not any(k in data for k in response_model.model_fields):
@@ -85,7 +89,6 @@ class GeminiProvider(LLMProvider):
                     data = data[root_key]
             return response_model.model_validate(data)
         except json.JSONDecodeError as e:
-            logger.error("Failed to decode LLM JSON response", error=str(e))
             raise InvalidAIResponseException(
                 detail="LLM output is not valid JSON"
             ) from e

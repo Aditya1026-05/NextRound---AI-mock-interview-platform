@@ -4,7 +4,7 @@ models:
     provider: "gemini"
     model: "gemini/gemini-2.5-flash"
     temperature: 0.0
-    max_tokens: 4096
+    max_tokens: 8192
     timeout: 30
     capabilities:
       supports_streaming: true
@@ -86,3 +86,9 @@ profiles:
     fallbacks: ["gemini-flash", "groq-llama-instant", "mistral-small"]
     retries: 2
     retry_delay: 0.5
+
+  interview_evaluation:
+    primary: "gemini-flash"
+    fallbacks: ["groq-llama", "mistral-small"]
+    retries: 2
+    retry_delay: 1.0

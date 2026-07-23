@@ -153,7 +153,7 @@ export default function Dashboard() {
                   score={session.score}
                   status={session.status}
                   tags={session.tags as any}
-                  onClick={() => setLocation(`/interviews/session/${session.id}`)}
+                  onClick={() => setLocation(session.status === 'completed' ? `/interviews/session/${session.id}/evaluation` : `/interviews/session/${session.id}`)}
                 />
               ))}
             </div>

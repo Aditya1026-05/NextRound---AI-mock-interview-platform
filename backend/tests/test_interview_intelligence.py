@@ -584,3 +584,93 @@ async def test_active_time_calculation():
 
     # Section 1 Active: Turn 3 (50s) = 50 seconds
     assert section_active_1 == 50.0
+
+
+@pytest.mark.asyncio
+async def test_evaluation_engine(db, prep_test_data):
+    """Verify deterministic scoring, thresholds recommendation mapping, idempotency, and version tag."""
+    from app.services.interview.evaluation_service import EvaluationService, EvaluationSynthesisSchema, QuestionReviewItem
+    from app.models.interview.interview_evaluation import InterviewEvaluation
+    
+    _, _, session, _ = prep_test_data
+    
+    # Add mock conversation history and turn analyses
+    m0 = InterviewMessage(
+        session_id=session.id,
+        sequence_number=0,
+        role=InterviewMessageRole.INTERVIEWER,
+        content="What is B-Trees?",
+        question_type=QuestionType.PRIMARY.value
+    )
+    m1 = InterviewMessage(
+        session_id=session.id,
+        sequence_number=1,
+        role=InterviewMessageRole.CANDIDATE,
+        content="B-Trees is a balanced search tree."
+    )
+    db.add_all([m0, m1])
+    await db.flush()
+    
+    a1 = InterviewTurnAnalysis(
+        message_id=m1.id,
+        technical_accuracy=AnswerQuality.EXCELLENT.value,
+        depth=AnswerQuality.EXCELLENT.value,
+        coverage=AnswerQuality.GOOD.value,
+        communication=AnswerQuality.GOOD.value,
+        confidence=AnswerQuality.EXCELLENT.value,
+        missing_topics=[],
+        strengths=["trees"],
+        difficulty_level=DifficultyLevel.MEDIUM.value,
+        blueprint_section="DB Fundamentals",
+    )
+    db.add(a1)
+    await db.commit()
+    
+    # Calculate score based on TECHNICAL weights:
+    # technical_accuracy: EXCELLENT -> 100 * 0.40 = 40.0
+    # depth: EXCELLENT -> 100 * 0.20 = 20.0
+    # coverage: GOOD -> 85 * 0.20 = 17.0
+    # communication: GOOD -> 85 * 0.10 = 8.5
+    # confidence: EXCELLENT -> 100 * 0.10 = 10.0
+    # Sum: 40 + 20 + 17 + 8.5 + 10 = 95.5 -> Overall Score = 96 -> recommendation: "Strong Hire"
+    
+    # Mock LLM Orchestrator call
+    mock_synthesis = EvaluationSynthesisSchema(
+        summary="Candidate showed strong understanding of data structures.",
+        timeline_reviews=[
+            QuestionReviewItem(
+                message_id=str(m0.id),
+                ideal_answer="A B-tree is a self-balancing tree data structure.",
+                evaluation="Good explanation.",
+                strengths=["Basic structure"],
+                improvements=["Complexity analysis"]
+            )
+        ]
+    )
+    
+    service = EvaluationService(db)
+    
+    with patch.object(service.orchestrator, "structured_completion", return_value=mock_synthesis) as mock_complete:
+        # Generate evaluation
+        evaluation = await service.generate_evaluation(session.id)
+        
+        # Verify deterministic scores
+        assert evaluation.overall_score == 96
+        assert evaluation.recommendation == "Strong Hire"
+        assert evaluation.evaluation_version == "v1"
+        assert evaluation.skill_scores["Technical Knowledge"] == 5.0  # 100 / 20.0
+        assert evaluation.skill_scores["Communication"] == 4.25  # 85 / 20.0
+        
+        # Verify LLM call was made
+        mock_complete.assert_called_once()
+        
+        # Verify persisted evaluation list
+        assert len(evaluation.timeline_reviews) == 1
+        assert evaluation.timeline_reviews[0]["score"] == 96
+        
+        # Verify Idempotency: call again, should not call LLM and fetch from DB
+        mock_complete.reset_mock()
+        second_eval = await service.generate_evaluation(session.id)
+        assert second_eval.id == evaluation.id
+        mock_complete.assert_not_called()
+

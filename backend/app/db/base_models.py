@@ -8,6 +8,7 @@ from app.models.interview import (
     Company,
     Competency,
     InterviewBlueprint,
+    InterviewEvaluation,
     InterviewCompetencyScore,
     InterviewEvent,
     InterviewMessage,

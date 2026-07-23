@@ -1,6 +1,7 @@
 from app.models.interview.company import Company
 from app.models.interview.competency import Competency
 from app.models.interview.interview_blueprint import InterviewBlueprint
+from app.models.interview.interview_evaluation import InterviewEvaluation
 from app.models.interview.interview_competency_score import InterviewCompetencyScore
 from app.models.interview.interview_event import InterviewEvent
 from app.models.interview.interview_message import InterviewMessage
@@ -18,6 +19,7 @@ __all__ = [
     "Company",
     "Competency",
     "InterviewBlueprint",
+    "InterviewEvaluation",
     "InterviewCompetencyScore",
     "InterviewEvent",
     "InterviewMessage",
