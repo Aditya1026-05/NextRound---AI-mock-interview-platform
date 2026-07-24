@@ -35,6 +35,13 @@ async def lifespan(app: FastAPI):
     # Initialize Redis connection pool
     redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
 
+    # Initialize Judge0 Language Registry
+    from app.services.interview.judge0_language_registry import Judge0LanguageRegistry
+    try:
+        await Judge0LanguageRegistry.initialize()
+    except Exception as e:
+        logger.error("Failed to initialize Judge0 Language Registry on startup", error=str(e))
+
     yield
 
     # Cleanup resources

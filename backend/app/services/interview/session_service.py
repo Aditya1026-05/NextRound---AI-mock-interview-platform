@@ -33,7 +33,7 @@ class InterviewSessionService:
     async def create_session(
         self,
         user_id: uuid.UUID,
-        resume_id: uuid.UUID,
+        resume_id: uuid.UUID | None,
         category: InterviewCategory,
         role: InterviewRole | None,
     ) -> InterviewSession:
@@ -41,7 +41,6 @@ class InterviewSessionService:
         # 1. Resolve default category durations
         if category == InterviewCategory.TECHNICAL:
             duration_minutes = 45
-            # Validate role exists for technical category
             if not role:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -49,13 +48,13 @@ class InterviewSessionService:
                 )
         elif category == InterviewCategory.CODING:
             duration_minutes = 60
-            role = None  # Role is not applicable/ignored
+            role = None
         elif category == InterviewCategory.BEHAVIORAL:
             duration_minutes = 30
-            role = None  # Role is not applicable/ignored
+            role = None
         elif category == InterviewCategory.SYSTEM_DESIGN:
             duration_minutes = 60
-            role = None  # Role is not applicable/ignored
+            role = None
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -70,48 +69,54 @@ class InterviewSessionService:
             transaction_started,
         )
 
-        bind_context(resume_id=resume_id, user_id=user_id)
+        # 2. Fetch and validate resume (ownership and status) if provided
+        resume = None
+        candidate_profile = None
+        summary = ""
 
-        # 2. Fetch and validate resume (ownership and status)
-        stmt_resume = select(Resume).filter(
-            Resume.id == resume_id, Resume.user_id == user_id
-        )
-        resume = await self.db.scalar(stmt_resume)
-        if not resume:
-            step_failed("VALIDATION", "Resume ownership verification", "Resume not found or unauthorized")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Resume not found or access unauthorized",
+        if resume_id:
+            bind_context(resume_id=resume_id, user_id=user_id)
+            stmt_resume = select(Resume).filter(
+                Resume.id == resume_id, Resume.user_id == user_id
             )
+            resume = await self.db.scalar(stmt_resume)
+            if not resume:
+                step_failed("VALIDATION", "Resume ownership verification", "Resume not found or unauthorized")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Resume not found or access unauthorized",
+                )
 
-        if resume.status != ResumeStatus.CONFIRMED:
-            step_failed("VALIDATION", "Resume ownership verification", f"Resume status: {resume.status}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Resume confirmation required. Current status: {resume.status}",
+            if resume.status != ResumeStatus.CONFIRMED:
+                step_failed("VALIDATION", "Resume ownership verification", f"Resume status: {resume.status}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Resume confirmation required. Current status: {resume.status}",
+                )
+
+            step_completed("VALIDATION", "Resume ownership verified")
+
+            # 3. Fetch candidate profile
+            stmt_cp = select(CandidateProfile).filter(
+                CandidateProfile.resume_id == resume_id
             )
+            candidate_profile = await self.db.scalar(stmt_cp)
+            if not candidate_profile:
+                step_failed("VALIDATION", "Candidate profile verification", "Candidate profile not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Candidate Profile not found. Please confirm the resume again.",
+                )
 
-        step_completed("VALIDATION", "Resume ownership verified")
+            step_completed("VALIDATION", "Candidate profile located")
 
-        # 3. Fetch candidate profile
-        stmt_cp = select(CandidateProfile).filter(
-            CandidateProfile.resume_id == resume_id
-        )
-        candidate_profile = await self.db.scalar(stmt_cp)
-        if not candidate_profile:
-            step_failed("VALIDATION", "Candidate profile verification", "Candidate profile not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Candidate Profile not found. Please confirm the resume again.",
+            # Retrieve summary block from candidate profile JSON
+            profile_json = candidate_profile.profile_json or {}
+            summary = profile_json.get("summary") or profile_json.get(
+                "overall_technical_profile", ""
             )
-
-        step_completed("VALIDATION", "Candidate profile located")
-
-        # Retrieve summary block from candidate profile JSON
-        profile_json = candidate_profile.profile_json or {}
-        summary = profile_json.get("summary") or profile_json.get(
-            "overall_technical_profile", ""
-        )
+        else:
+            bind_context(user_id=user_id)
 
         # 3.5 Clean up and finalize any active sessions for this user (lag/midway close safety)
         stmt_active = select(InterviewSession).filter(
@@ -129,7 +134,7 @@ class InterviewSessionService:
         session = InterviewSession(
             user_id=user_id,
             resume_id=resume_id,
-            candidate_profile_id=candidate_profile.id,
+            candidate_profile_id=candidate_profile.id if candidate_profile else None,
             interview_category=category,
             role=role,
             difficulty=DifficultyType.ADAPTIVE,
@@ -138,7 +143,12 @@ class InterviewSessionService:
         )
         self.db.add(session)
         await self.db.flush()
-        bind_context(session_id=str(session.id), candidate_profile_id=str(candidate_profile.id))
+        
+        if candidate_profile:
+            bind_context(session_id=str(session.id), candidate_profile_id=str(candidate_profile.id))
+        else:
+            bind_context(session_id=str(session.id))
+            
         step_completed("INTERVIEW", "Session created")
 
         transaction_started()

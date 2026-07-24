@@ -11,6 +11,8 @@ CONSTRAINTS & RULES:
    - For BEHAVIORAL Interviews:
      * "Behavioral & Situational Evaluation" (evaluating soft skills like leadership, conflict resolution, teamwork, dealing with ambiguity, growth mindset).
      * "Resume Behavioral & Experience Review" (probing real instances from the candidate's resume where they demonstrated soft skills, resolved conflicts, or handled project challenges).
+   - For CODING Interviews:
+     * "Coding (DSA)" (evaluating the candidate's programming logic, algorithm complexity reasoning, data structures selection, and technical implementation).
 5. For each section, assign limits:
    - "min_questions": Minimum number of main topics to ask (generally 2 for 15-20 min, or 3 for 25-30 min).
    - "max_questions": Maximum number of main topics allowed (generally 4 for 15-20 min, or 5 for 25-30 min).

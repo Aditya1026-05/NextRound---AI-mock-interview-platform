@@ -103,3 +103,40 @@ class QuestionType(StrEnum):
     INTRODUCTION = "INTRODUCTION"
     CLOSING = "CLOSING"
 
+
+class DiscussionPhase(StrEnum):
+    THINKING = "THINKING"
+    CODING = "CODING"
+    COMPLEXITY = "COMPLEXITY"
+    OPTIMIZATION = "OPTIMIZATION"
+
+
+class HintLevel(StrEnum):
+    NONE = "NONE"
+    LEVEL_1 = "LEVEL_1"
+    LEVEL_2 = "LEVEL_2"
+    LEVEL_3 = "LEVEL_3"
+
+
+class SubmissionSource(StrEnum):
+    INTERVIEW = "INTERVIEW"
+    PRACTICE = "PRACTICE"
+    REPLAY = "REPLAY"
+
+
+class ExecutionType(StrEnum):
+    RUN = "RUN"
+    SUBMIT = "SUBMIT"
+
+
+class ExecutionStatus(StrEnum):
+    ACCEPTED = "Accepted"
+    WRONG_ANSWER = "Wrong Answer"
+    TIME_LIMIT_EXCEEDED = "Time Limit Exceeded"
+    MEMORY_LIMIT_EXCEEDED = "Memory Limit Exceeded"
+    COMPILE_ERROR = "Compilation Error"
+    RUNTIME_ERROR = "Runtime Error"
+    INTERNAL_ERROR = "Internal Error"
+
+
+

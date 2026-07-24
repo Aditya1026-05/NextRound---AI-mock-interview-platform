@@ -14,6 +14,9 @@ from app.models.interview.question_bank import QuestionBank
 from app.models.interview.question_competency import QuestionCompetency
 from app.models.interview.question_test_case import QuestionTestCase
 from app.models.interview.role import Role
+from app.models.interview.coding_problem import CodingProblem
+from app.models.interview.language_template import LanguageTemplate
+from app.models.interview.code_submission import CodeSubmission
 
 __all__ = [
     "Company",
@@ -32,4 +35,8 @@ __all__ = [
     "QuestionCompetency",
     "QuestionTestCase",
     "Role",
+    "CodingProblem",
+    "LanguageTemplate",
+    "CodeSubmission",
 ]
+

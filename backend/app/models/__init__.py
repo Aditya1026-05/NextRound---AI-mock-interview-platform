@@ -14,6 +14,9 @@ from app.models.interview.question_bank import QuestionBank
 from app.models.interview.question_competency import QuestionCompetency
 from app.models.interview.question_test_case import QuestionTestCase
 from app.models.interview.role import Role
+from app.models.interview.coding_problem import CodingProblem
+from app.models.interview.language_template import LanguageTemplate
+from app.models.interview.code_submission import CodeSubmission
 from app.models.resume.education import Education
 from app.models.resume.project import Project
 from app.models.resume.project_skill import ProjectSkill
@@ -27,6 +30,8 @@ __all__ = [
     # AI Domain
     "CandidateProfile",
     # Interview Domain
+    "CodingProblem",
+    "CodeSubmission",
     "Company",
     "Competency",
     "Education",
@@ -36,6 +41,7 @@ __all__ = [
     "InterviewResponse",
     "InterviewSession",
     "InterviewTemplate",
+    "LanguageTemplate",
     "Project",
     "ProjectSkill",
     "QuestionBank",

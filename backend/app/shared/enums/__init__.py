@@ -13,6 +13,11 @@ from app.shared.enums.interview import (
     QuestionType,
     ResponseType,
     SessionStatus,
+    DiscussionPhase,
+    HintLevel,
+    SubmissionSource,
+    ExecutionType,
+    ExecutionStatus,
 )
 from app.shared.enums.resume import ResumeStatus
 
@@ -32,4 +37,10 @@ __all__ = [
     "ResumeStatus",
     "SessionStatus",
     "TokenType",
+    "DiscussionPhase",
+    "HintLevel",
+    "SubmissionSource",
+    "ExecutionType",
+    "ExecutionStatus",
 ]
+

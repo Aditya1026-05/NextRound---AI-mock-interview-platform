@@ -30,7 +30,7 @@ logger = structlog.get_logger()
 
 # Schemas
 class InterviewSessionCreate(BaseModel):
-    resume_id: uuid.UUID
+    resume_id: uuid.UUID | None = None
     category: InterviewCategory
     role: InterviewRole | None = None
 
@@ -114,8 +114,7 @@ async def get_session_detail(
             detail="Interview session not found",
         )
 
-    # Resolve resume original filename
-    resume_name = session.resume.original_filename if session.resume else "Unknown Resume"
+    resume_name = session.resume.original_filename if session.resume else "N/A"
 
     # Resolve blueprint title
     blueprint_title = session.blueprint.title if session.blueprint else None

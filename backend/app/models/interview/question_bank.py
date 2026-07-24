@@ -18,6 +18,10 @@ class QuestionBank(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __tablename__ = "question_bank"
 
+    __mapper_args__ = {
+        "polymorphic_on": "question_type",
+    }
+
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     question_type: Mapped[InterviewType] = mapped_column(

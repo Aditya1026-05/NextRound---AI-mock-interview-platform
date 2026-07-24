@@ -113,7 +113,7 @@ export default function InterviewNew() {
   }, [isUserStoreLoading, token]);
 
   const handleStart = async () => {
-    if (!selectedResumeId) {
+    if (selectedCategory !== 'coding' && !selectedResumeId) {
       setErrorMsg("Please select a confirmed resume first.");
       return;
     }
@@ -128,7 +128,7 @@ export default function InterviewNew() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resume_id: selectedResumeId,
+          resume_id: selectedCategory === 'coding' ? null : selectedResumeId,
           category: selectedCategory,
           role: selectedCategory === 'technical' ? selectedRole : null,
         }),
@@ -192,28 +192,6 @@ export default function InterviewNew() {
             </div>
             <span className="text-xs text-muted-foreground font-medium">Fetching candidate profiles...</span>
           </Card>
-        ) : resumesList.length === 0 ? (
-          <Card className="border border-border/50 rounded-2xl p-8 bg-card/65 backdrop-blur-md shadow-sm text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-2xl">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-            </div>
-            <div className="space-y-1.5 max-w-sm mx-auto">
-              <CardTitle className="text-lg font-bold text-foreground">No Confirmed Resumes Found</CardTitle>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Before setting up an AI mock interview, you must upload and confirm a resume draft to generate candidate profile context.
-              </p>
-            </div>
-            <div className="pt-2">
-              <Button
-                onClick={() => setLocation('/resume')}
-                className="text-xs font-semibold bg-[#4285F4] hover:bg-[#3b77db] text-white rounded-full px-6"
-              >
-                Go to Resume Intelligence
-              </Button>
-            </div>
-          </Card>
         ) : (
           <Card className="border border-border/50 rounded-2xl bg-card/65 backdrop-blur-md shadow-sm">
             <CardHeader className="p-6">
@@ -230,18 +208,37 @@ export default function InterviewNew() {
                   <select
                     id="resume-select"
                     value={selectedResumeId}
+                    disabled={selectedCategory === 'coding'}
                     onChange={(e) => setSelectedResumeId(e.target.value)}
-                    className="w-full h-11 text-xs rounded-xl px-4 pl-10 border border-border bg-background/50 hover:border-foreground/10 focus:border-primary/50 focus:outline-none transition-colors cursor-pointer"
+                    className="w-full h-11 text-xs rounded-xl px-4 pl-10 border border-border bg-background/50 disabled:opacity-50 disabled:cursor-not-allowed hover:border-foreground/10 focus:border-primary/50 focus:outline-none transition-colors cursor-pointer"
                   >
-                    {resumesList.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.filename} {r.is_primary ? '(Primary)' : ''}
-                      </option>
-                    ))}
+                    {resumesList.length > 0 ? (
+                      resumesList.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.filename} {r.is_primary ? '(Primary)' : ''}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No confirmed resumes available</option>
+                    )}
                   </select>
                   <FileText className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
               </div>
+
+              {selectedCategory !== 'coding' && resumesList.length === 0 && (
+                <div className="p-4 bg-amber-500/5 border border-amber-500/15 text-amber-500 rounded-2xl text-xs text-left flex items-start gap-2 animate-fade-in">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    This category requires a confirmed resume. Please upload and confirm a resume in the{" "}
+                    <span onClick={() => setLocation('/resume')} className="underline font-semibold cursor-pointer text-amber-600 hover:text-amber-700">
+                      Resume Intelligence
+                    </span>{" "}
+                    section first.
+                  </span>
+                </div>
+              )}
+
 
               <div className="space-y-3">
                 <Label className="text-xs font-bold text-foreground">Select Category</Label>

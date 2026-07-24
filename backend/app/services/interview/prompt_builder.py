@@ -176,7 +176,10 @@ Do NOT include any other keys, explanations, or text outside the JSON object.
         if state == InterviewState.GREETING:
             sys_prompt += "\nCURRENT STATE: GREETING. Welcome the candidate warmly, introduce yourself as NextRound's AI interviewer, and ask if they are ready to begin. Do NOT ask any technical or background questions yet.\n"
         elif state == InterviewState.INTRODUCTION:
-            sys_prompt += "\nCURRENT STATE: INTRODUCTION (Warm-up). You MUST ask the candidate to briefly introduce themselves, their background, and their experience. Do NOT ask any technical questions or project-specific deep-dives yet. This is strictly a warm-up phase.\n"
+            if session.interview_category.value.upper() == "CODING":
+                sys_prompt += "\nCURRENT STATE: INTRODUCTION (Warm-up). You MUST welcome the candidate to the coding challenge, explain that you will be asking a DSA coding question to evaluate their problem-solving and algorithmic logic, and ask them a warm-up question like what their general thought process or strategy is when approaching a new coding problem. Do NOT ask about their general background, experience, or resume projects.\n"
+            else:
+                sys_prompt += "\nCURRENT STATE: INTRODUCTION (Warm-up). You MUST ask the candidate to briefly introduce themselves, their background, and their experience. Do NOT ask any technical questions or project-specific deep-dives yet. This is strictly a warm-up phase.\n"
         elif state == InterviewState.IN_PROGRESS:
             is_behavioral = session.interview_category.value.upper() == "BEHAVIORAL"
             if is_behavioral:

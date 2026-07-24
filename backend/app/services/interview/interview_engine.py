@@ -198,6 +198,27 @@ class InterviewEngine:
         active_elapsed_minutes = active_elapsed_seconds / 60.0
         active_remaining_minutes = max(0.0, session.duration_minutes - active_elapsed_minutes)
 
+        # Resolve active section strategy routing
+        active_sec_name = "N/A"
+        if session.blueprint and session.blueprint.blueprint_json:
+            sections = session.blueprint.blueprint_json.get("sections", [])
+            idx = session.current_section_index
+            if idx is not None and 0 <= idx < len(sections):
+                active_sec_name = sections[idx].get("name", "N/A")
+
+        is_coding_category = session.interview_category.value.upper() == "CODING"
+        if is_coding_category and active_sec_name == "Coding (DSA)" and not (is_greeting_reply or is_closing_reply):
+            from app.services.interview.coding_section_strategy import CodingSectionStrategy
+            strategy = CodingSectionStrategy()
+            return await strategy.execute_turn(
+                db=self.db,
+                session=session,
+                history=list(history),
+                current_difficulty=current_difficulty,
+                active_elapsed_minutes=active_elapsed_minutes,
+                active_remaining_minutes=active_remaining_minutes,
+            )
+
         prompt_ctx = self.prompt_builder.build_prompts(
             session,
             list(history)[-10:],

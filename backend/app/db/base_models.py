@@ -21,6 +21,9 @@ from app.models.interview import (
     QuestionCompetency,
     QuestionTestCase,
     Role,
+    CodingProblem,
+    LanguageTemplate,
+    CodeSubmission,
 )
 from app.models.resume import (
     Education,

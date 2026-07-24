@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     CLOUDINARY_URL: str | None = None
     JUDGE0_URL: str = "http://localhost:2358"
     JUDGE0_API_KEY: str | None = None
+    CODE_EXECUTION_PROVIDER: str = "judge0"
+    JUDGE0_POLL_INTERVAL_MS: int = 150
+    JUDGE0_POLL_RETRIES: int = 40
+    JUDGE0_TIMEOUT_SECONDS: int = 8
+
 
     # LLM settings
     LLM_PROVIDER: str = "gemini"

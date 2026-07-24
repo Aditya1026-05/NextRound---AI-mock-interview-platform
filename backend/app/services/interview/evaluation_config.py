@@ -25,6 +25,13 @@ EVALUATION_WEIGHTS = {
         "communication": 0.10,
         "confidence": 0.10,
     },
+    "CODING": {
+        "technical_accuracy": 0.45,
+        "depth": 0.20,
+        "coverage": 0.15,
+        "communication": 0.10,
+        "confidence": 0.10,
+    },
     "BEHAVIORAL": {
         "technical_accuracy": 0.0,
         "depth": 0.25,
@@ -46,6 +53,13 @@ SKILL_NAME_MAPPINGS = {
     "TECHNICAL": {
         "Technical Knowledge": "technical_accuracy",
         "Depth of Answers": "depth",
+        "Problem Solving": "coverage",
+        "Communication": "communication",
+        "Confidence": "confidence",
+    },
+    "CODING": {
+        "Code Correctness": "technical_accuracy",
+        "Complexity & Design": "depth",
         "Problem Solving": "coverage",
         "Communication": "communication",
         "Confidence": "confidence",

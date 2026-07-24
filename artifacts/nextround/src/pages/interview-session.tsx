@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Send, Play, Bot, User, ArrowLeft, Loader2, MessageSquare, AlertTriangle, X, Clock } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
@@ -47,6 +48,7 @@ export default function InterviewSession() {
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Initialize and update the countdown timer
   useEffect(() => {
@@ -157,6 +159,9 @@ export default function InterviewSession() {
     const trimmed = inputVal.trim();
     if (!trimmed || !sessionId || sending) return;
     setInputVal('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '36px';
+    }
     setSending(true);
     setSendError(null);
 
@@ -182,6 +187,11 @@ export default function InterviewSession() {
       // Rollback optimistic message — user can retype (their text was cleared, so restore it)
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInputVal(trimmed); // Restore the typed text so they don't lose it
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        const newHeight = Math.min(textareaRef.current.scrollHeight, 160);
+        textareaRef.current.style.height = `${newHeight}px`;
+      }
       setSendError(err.message || 'Failed to send your response. Please try again.');
     } finally {
       setSending(false);
@@ -324,7 +334,7 @@ export default function InterviewSession() {
                       }`}>
                         {isInterviewer ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                       </div>
-                      <div className={`p-4 rounded-2xl text-xs leading-relaxed ${
+                      <div className={`p-4 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
                         isInterviewer
                           ? 'bg-background text-foreground border border-border/80 rounded-tl-none shadow-sm'
                           : 'bg-foreground text-background border border-transparent rounded-tr-none shadow'
@@ -358,27 +368,44 @@ export default function InterviewSession() {
                     Interview Completed. You can review the conversation above or exit.
                   </div>
                 ) : (
-                  <div className="flex items-center rounded-xl border border-border/80 bg-background focus-within:border-foreground/35 px-2 py-1 shadow-sm">
-                    <Input
+                  <div className="flex items-start rounded-xl border border-border/80 bg-background focus-within:border-foreground/35 px-2 py-1 shadow-sm">
+                    <style>{`
+                      textarea.scrollbar-none::-webkit-scrollbar {
+                        display: none;
+                      }
+                    `}</style>
+                    <Textarea
+                      ref={textareaRef}
                       placeholder="Type your response here..."
                       value={inputVal}
-                      onChange={(e) => setInputVal(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      onChange={(e) => {
+                        setInputVal(e.target.value);
+                        e.target.style.height = '36px';
+                        const newHeight = Math.min(e.target.scrollHeight, 160);
+                        e.target.style.height = `${newHeight}px`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                       disabled={sending}
-                      className="border-transparent focus-visible:ring-0 text-xs h-9 shadow-none flex-1 bg-transparent placeholder:text-muted-foreground/65"
+                      className="border-transparent focus-visible:ring-0 text-xs py-2 min-h-[36px] max-h-[160px] h-[36px] resize-none shadow-none flex-1 bg-transparent placeholder:text-muted-foreground/65 scrollbar-none"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     />
                     <Button
                       onClick={handleSendMessage}
                       disabled={sending || !inputVal.trim()}
                       size="icon"
-                      className="h-8 w-8 rounded-lg bg-foreground text-background hover:bg-foreground/90 shrink-0"
+                      className="h-8 w-8 rounded-lg bg-foreground text-background hover:bg-foreground/90 shrink-0 mt-0.5"
                     >
                       <Send className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 )}
                 <div className="flex justify-between items-center mt-2 px-1 text-[9px] text-muted-foreground">
-                  <span>Press Enter to submit</span>
+                  <span>Press Enter to submit, Shift + Enter for new line</span>
                   <span>Conversation is logged securely</span>
                 </div>
               </div>
